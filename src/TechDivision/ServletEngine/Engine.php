@@ -58,8 +58,8 @@ class Engine
      * Initializes the engine.
      *
      * @param \TechDivision\WebServer\Interfaces\ServerContextInterface $serverContext The servers context instance
-     *
-     * @throws \TechDivision\WebServer\Exceptions\ModuleException
+     * 
+     * @return void
      */
     public function init(ServerContextInterface $serverContext)
     {
@@ -70,6 +70,7 @@ class Engine
     }
     
     /**
+     * Processes the servlet request.
      * 
      * @return void
      */

@@ -1,0 +1,20 @@
+{
+    "name": "techdivision/servletengine",
+    "type": "package",
+    "description": "Servlet engine default implementation.",
+    "homepage": "https://github.com/techdivision/TechDivision_ServletEngine",
+    "license": ["OSL-3.0"],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/techdivision/TechDivision_ServletEngine"
+        }
+    ],
+    "require": {
+        "php" : ">=5.4.0",
+        "techdivision/servlet": "dev-master"
+    },
+    "autoload": {
+        "psr-0": {"TechDivision": "src/"}
+    }
+}

@@ -140,11 +140,9 @@ class Session implements HttpSession
      * Session instances MUST NOT be created manually! They should be retrieved via
      * the Session Manager or through dependency injection (use SessionInterface!).
      * 
-     * @param string|null  $id     The public session identifier which is also used in the session cookie
+     * @param string|null  $id                    The public session identifier which is also used in the session cookie
      * @param integer|null $lastActivityTimestamp Unix timestamp of the last known activity for this session
      * @param array|null   $tags                  A list of tags set for this session
-     *
-     * @throws \InvalidArgumentException
      */
     public function __construct($id = null, $lastActivityTimestamp = null, array $tags = array())
     {
@@ -203,7 +201,7 @@ class Session implements HttpSession
      * @return void
      */
     public function injectSettings(SessionSettings $settings)
-    {   
+    {
         $this->settings = $settings;
     }
     
@@ -434,8 +432,8 @@ class Session implements HttpSession
             throw new DataNotSerializableException('The given data cannot be stored in a session, because it is of type "' . gettype($data) . '".');
         }
         $this->storage->set(
-            $this->id . md5($key), 
-            $data, 
+            $this->id . md5($key),
+            $data,
             array(
                 $this->id
             ),
@@ -688,6 +686,7 @@ class Session implements HttpSession
      * @return string The random string
      */
     protected function generateRandomString($length = 32)
+    {
         $bytes = '';
         foreach (range(1, $length) as $i) {
             $bytes = chr(mt_rand(0, 256)) . $bytes;

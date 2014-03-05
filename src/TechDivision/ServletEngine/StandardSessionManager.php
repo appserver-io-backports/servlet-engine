@@ -68,7 +68,7 @@ class StandardSessionManager implements SessionManager
      * @return void
      */
     public function injectSettings(SessionSettings $settings)
-    {   
+    {
         $this->settings = $settings;
     }
 
@@ -92,7 +92,7 @@ class StandardSessionManager implements SessionManager
      * @return \TechDivision\Servlet\HttpSession The requested session
      */
     public function create($id)
-    {   
+    {
         // initialize and return the session instance
         $session = new Session($id, time());
         $session->injectSettings($this->settings);

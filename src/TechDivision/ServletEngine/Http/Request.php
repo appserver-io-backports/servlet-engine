@@ -54,7 +54,7 @@ class Request implements HttpServletRequest;
      * 
      * @return void
      */
-    public function setRequest(HttpRequestInterface $request)
+    public function __construct(HttpRequestInterface $request)
     {
         $this->request = $request;
     }

@@ -19,6 +19,8 @@ namespace TechDivision\ServletEngine;
 use TechDivision\Http\HttpProtocol;
 use TechDivision\Servlet\ServletRequest;
 use TechDivision\Servlet\ServletResponse;
+use TechDivision\Http\HttpRequestInterface;
+use TechDivision\Http\HttpResponseInterface;
 
 /**
  * The servlet engine implementation.
@@ -48,7 +50,7 @@ class Engine
     protected $manager;
     
     /**
-     * The applications for the container.
+     * Array with applications handled by the servlet engine.
      * 
      * @var array
      */
@@ -63,18 +65,26 @@ class Engine
      */
     public function init(ServerContextInterface $serverContext)
     {
+        
+        // load the container from the server context and deploy the applications
         $this->container = $serverContext->getContainer();
         $this->applications = $this->getDeployment()->deploy()->getApplications();
         
-        $this->manager = $this->newInstance('TechDivision\ServletEngine\StandardSessionManager', array($this->getInitialContext()));
+        // initialize the session manager
+        $this->manager = $this->newInstance('TechDivision\ServletEngine\StandardSessionManager');
+        $this->manager->injectSettings($this->newInstance('TechDivision\ServletEngine\DefaultSessionSettings'));
+        $this->manager->injectStorage($this->getInitialContext()->getStorage());
     }
     
     /**
      * Processes the servlet request.
-     * 
-     * @return void
+     *
+     * @param \TechDivision\Http\HttpRequestInterface  $request  The request instance
+     * @param \TechDivision\Http\HttpResponseInterface $response The response instance
+     *
+     * @return bool
      */
-    public function process()
+    public function process(HttpRequestInterface $request, HttpResponseInterface $response)
     {
         // intialize servlet session, request + response
         $servletRequest = $this->newInstance('TechDivision\ServletEngine\Http\Request', array($request));
@@ -139,7 +149,7 @@ class Engine
         
         // if not throw a bad request exception
         throw new BadRequestException(
-            sprintf("Can't find application for URI %s", $servletRequest->getUri())
+            sprintf('Can\'t find application for URI %s', $servletRequest->getUri())
         );
     }
     

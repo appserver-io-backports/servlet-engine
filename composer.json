@@ -12,6 +12,7 @@
     ],
     "require": {
         "php" : ">=5.4.0",
+        "techdivision/http": "dev-master",
         "techdivision/servlet": "dev-master"
     },
     "autoload": {

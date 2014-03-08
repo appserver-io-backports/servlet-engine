@@ -55,6 +55,8 @@ interface RequestContext extends Context
     /**
      * Returns the server variable with the requested name.
      *
+     * @param string $name The name of the server variable to be returned
+     *
      * @return mixed The requested server variable
      */
     public function getServerVar($name);

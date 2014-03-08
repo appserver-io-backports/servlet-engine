@@ -159,7 +159,7 @@ class Request implements HttpServletRequest
      * Injects the context that allows access to session and
      * server information.
      * 
-     * @param \TechDivision\Context\Context $context
+     * @param \TechDivision\Context\Context $context The request context instance
      * 
      * @return void
      */
@@ -299,6 +299,8 @@ class Request implements HttpServletRequest
      * Sets the application context name (application name prefixed with a slash) for the actual request.
      * 
      * @param string $contextPath The application context name
+     * 
+     * @return void
      */
     public function setContextPath($contextPath)
     {
@@ -318,7 +320,7 @@ class Request implements HttpServletRequest
     /**
      * Sets the path to the servlet used to handle this request.
      * 
-     * @return string $servletPath The path to the servlet
+     * @param string $servletPath The path to the servlet
      * 
      * @return void
      */
@@ -334,7 +336,7 @@ class Request implements HttpServletRequest
      */
     public function getServletPath()
     {
-       return $this->servletPath;
+        return $this->servletPath;
     }
 
     /**
@@ -374,7 +376,7 @@ class Request implements HttpServletRequest
     /**
      * Returns the absolute path info started from the context path.
      * 
-     * @return string the absolute path info
+     * @return string The absolute path info
      */
     public function getPathInfo()
     {
@@ -384,7 +386,7 @@ class Request implements HttpServletRequest
     /**
      * Returns the absolute path info started from the context path.
      * 
-     * @return string $pathInfo the absolute path info
+     * @param string $pathInfo The absolute path info
      * 
      * @return void
      */
@@ -396,7 +398,7 @@ class Request implements HttpServletRequest
     /**
      * Sets the query string of the actual request.
      * 
-     * @return string $queryString The query string of the actual request
+     * @param string $queryString The query string of the actual request
      * 
      * @return void
      */
@@ -624,6 +626,8 @@ class Request implements HttpServletRequest
 
     /**
      * Returns the server variable with the requested name.
+     *
+     * @param string $name The name of the server variable to be returned
      *
      * @return mixed The requested server variable
      */

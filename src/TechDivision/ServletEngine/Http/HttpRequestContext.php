@@ -67,7 +67,7 @@ class HttpRequestContext extends BaseContext
     /**
      * Injects the server variables.
      * 
-     * @param array The server variables
+     * @param array $serverVars The server variables
      * 
      * @return void
      */

@@ -22,6 +22,7 @@
 
 namespace TechDivision\ServletEngine\Http;
 
+use TechDivision\Storage\StorageInterface;
 use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Servlet\Http\HttpServletRequest;
@@ -184,11 +185,11 @@ class Session implements HttpSession
     /**
      * Injects the storage to persist session data.
      *
-     * @param \TechDivision\ServletEngine\SessionStorage $storage The session storage to use
+     * @param \TechDivision\Storage\StorageInterface $storage The session storage to use
      *
      * @return void
      */
-    public function injectStorage(SessionStorage $storage)
+    public function injectStorage(StorageInterface $storage)
     {
         $this->storage = $storage;
     }
@@ -228,16 +229,6 @@ class Session implements HttpSession
     }
 
     /**
-     * Return's the unique session identifier.
-     *
-     * @return string The unique session identifier
-     */
-    public function getSessionIdentifier()
-    {
-        return $this->id;
-    }
-
-    /**
      * Tells if the session has been started already.
      *
      * @return boolean
@@ -263,7 +254,7 @@ class Session implements HttpSession
 
             $this->id = $this->generateRandomString(32);
             $this->sessionCookie = new Cookie(
-                $this->getSettings()->getSessionCookieName(),
+                $this->getSettings()->getSessionName(),
                 $this->id,
                 $this->getSettings()->getSessionCookieLifetime(),
                 null,
@@ -565,10 +556,10 @@ class Session implements HttpSession
      */
     protected function initializeHttpAndCookie()
     {
-        if ($this->request->hasCookie($this->getSettings()->getSessionCookieName())) {
-            $id = $this->request->getCookie($this->getSettings()->getSessionCookieName())->getValue();
+        if ($this->request->hasCookie($this->getSettings()->getSessionName())) {
+            $id = $this->request->getCookie($this->getSettings()->getSessionName())->getValue();
             $this->sessionCookie = new Cookie(
-                $this->getSettings()->getSessionCookieName(),
+                $this->getSettings()->getSessionName(),
                 $id,
                 $this->getSettings()->getSessionCookieLifetime(),
                 null,
@@ -594,14 +585,15 @@ class Session implements HttpSession
      */
     protected function writeSessionInfoCacheEntry()
     {
+        
         $sessionInfo = array(
             'lastActivityTimestamp' => $this->lastActivityTimestamp,
             'tags' => $this->tags
         );
-
+        
         $tagsForCacheEntry = array_map(
             function ($tag) {
-                return ServletSession::TAG_PREFIX . $tag;
+                return Session::TAG_PREFIX . $tag;
             },
             $this->tags
         );
@@ -647,7 +639,7 @@ class Session implements HttpSession
         if ($this->started !== true) {
             throw new SessionNotStartedException('Tried to destroy a session which has not been started yet.');
         }
-        if ($this->response->hasCookie($this->getSettings()->getSessionCookieName()) === false) {
+        if ($this->response->hasCookie($this->getSettings()->getSessionName()) === false) {
             $this->response->addCookie($this->sessionCookie);
         }
         $this->sessionCookie->expire();

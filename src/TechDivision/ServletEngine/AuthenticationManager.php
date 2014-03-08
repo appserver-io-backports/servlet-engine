@@ -68,7 +68,7 @@ class AuthenticationManager
         }
 
         // initialize the authentication manager
-        $auth = $servlet->getServletManager()->getApplication()->newInstance($authImplementation);
+        $auth = $servlet->getServletContext()->getApplication()->newInstance($authImplementation);
         $auth->init($servlet, $servletRequest, $servletResponse);
 
         // authenticate the request

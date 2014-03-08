@@ -77,7 +77,7 @@ class HtpasswdAdapter extends AuthenticationAdapter
     public function init()
     {
         // get current web app path.
-        $webAppPath = $this->servlet->getServletManager()->getWebappPath();
+        $webAppPath = $this->servlet->getServletContext()->getWebappPath();
 
         // get content of htpasswd file.
         $htpasswdData = file($webAppPath . DIRECTORY_SEPARATOR . 'WEB-INF' . DIRECTORY_SEPARATOR . $this->filename);

@@ -15,12 +15,11 @@
 
 namespace TechDivision\ServletEngine;
 
-
 use TechDivision\Http\HttpProtocol;
 use TechDivision\Servlet\ServletRequest;
 use TechDivision\Servlet\ServletResponse;
-use TechDivision\Http\HttpRequestInterface;
-use TechDivision\Http\HttpResponseInterface;
+use TechDivision\WebServer\Dictionaries\ServerVars;
+use TechDivision\ApplicationServer\Interfaces\ContainerInterface;
 
 /**
  * The servlet engine implementation.
@@ -43,67 +42,51 @@ class Engine
     protected $container;
     
     /**
-     * The session manager instance started with the engine.
-     * 
-     * @var \TechDivision\ServletEngine\SessionManager
-     */
-    protected $manager;
-    
-    /**
-     * Array with applications handled by the servlet engine.
+     * Array with applications bound to this engine.
      * 
      * @var array
      */
     protected $applications;
+    
+    /**
+     * The session manager instance.
+     * 
+     * @var \TechDivision\ServletEngine\SessionManager
+     */
+    protected $manager;
 
     /**
      * Initializes the engine.
-     *
-     * @param \TechDivision\WebServer\Interfaces\ServerContextInterface $serverContext The servers context instance
      * 
      * @return void
      */
-    public function init(ServerContextInterface $serverContext)
+    public function init()
     {
-        
-        // load the container from the server context and deploy the applications
-        $this->container = $serverContext->getContainer();
-        $this->applications = $this->getDeployment()->deploy()->getApplications();
-        
-        // initialize the session manager
-        $this->manager = $this->newInstance('TechDivision\ServletEngine\StandardSessionManager');
-        $this->manager->injectSettings($this->newInstance('TechDivision\ServletEngine\DefaultSessionSettings'));
-        $this->manager->injectStorage($this->getInitialContext()->getStorage());
     }
     
     /**
      * Processes the servlet request.
      *
-     * @param \TechDivision\Http\HttpRequestInterface  $request  The request instance
-     * @param \TechDivision\Http\HttpResponseInterface $response The response instance
+     * @param \TechDivision\Servlet\ServletRequest  $servletRequest  The request instance to locate the application for
+     * @param \TechDivision\Servlet\ServletResponse $servletResponse The response instance sent back to the client
      *
-     * @return bool
+     * @return boolean
      */
-    public function process(HttpRequestInterface $request, HttpResponseInterface $response)
+    public function process(ServletRequest $servletRequest, ServletResponse $servletResponse)
     {
-        // intialize servlet session, request + response
-        $servletRequest = $this->newInstance('TechDivision\ServletEngine\Http\Request', array($request));
-        $servletResponse = $this->newInstance('TechDivision\ServletEngine\Http\Response', array($response));
-        
-        // inject servlet response and session manager
-        $servletRequest->injectSessionManager($this->sessionManager);
-        $servletRequest->injectServletResponse($servletResponse);
+
+        // inject the response and the session manager into the request
+        $servletRequest->injectResponse($servletResponse);
+        $servletRequest->getContext()->injectSessionManager($this->getManager());
         
         // try to locate the application and the servlet that could service the current request
         $servlet = $this->locate($servletRequest)->locate($servletRequest);
         
         // initialize the default shutdown handler, and the authentication manager
-        $shutdownHandler = $this->newInstance('TechDivision\Servlet\DefaultShutdownHandler', array($servletResponse));
         $authenticationManager = $this->newInstance('TechDivision\ServletEngine\AuthenticationManager');
         
         // inject authentication manager and shutdown handler
         $servlet->injectAuthenticationManager($authenticationManager);
-        $servlet->injectShutdownHandler($shutdownHandler);
         
         // let the servlet process the request send it back to the client
         $servlet->service($servletRequest, $servletResponse);
@@ -119,9 +102,12 @@ class Engine
      */
     protected function locate(ServletRequest $servletRequest)
     {
+
+        // explode host and port from the host header
+        list ($host, $port) = explode(':', $servletRequest->getHeader(HttpProtocol::HEADER_HOST));
         
         // prepare the URI to be matched
-        $url = $servletRequest->getServerName() . $servletRequest->getUri();
+        $url =  $host . $servletRequest->getUri();
         
         // try to find the application by match it one of the prepared patterns
         foreach ($this->getApplications() as $pattern => $application) {
@@ -131,16 +117,11 @@ class Engine
                 
                 // prepare and set the applications context path
                 $servletRequest->setContextPath($contextPath = '/' . $application->getName());
-                
-                // prepare the path information depending if we're a vhost or not
-                if ($application->isVhostOf($servletRequest->getServerName())) {
-                    $pathInfo = $servletRequest->getUri();
-                } else {
-                    $pathInfo = str_replace($contextPath, '', $servletRequest->getUri());
+
+                // prepare the path information depending if we're in a vhost or not
+                if ($application->isVhostOf($host) === false) {
+                    $servletRequest->setServletPath(str_replace($contextPath, '', $servletRequest->getServletPath()));
                 }
-                
-                // set the script file information in the server variables
-                $servletRequest->setPathInfo($pathInfo);
                 
                 // return the application instance
                 return $application;
@@ -152,42 +133,71 @@ class Engine
             sprintf('Can\'t find application for URI %s', $servletRequest->getUri())
         );
     }
+
+    /**
+     * Injects the container instance to use.
+     * 
+     * @param \TechDivision\ApplicationServer\Interfaces\ContainerInterface $container The container instance
+     * 
+     * @return void
+     */
+    public function injectContainer(ContainerInterface $container)
+    {
+        $this->container = $container;
+    }
+
+    /**
+     * Injects the applications bound to this engine
+     * 
+     * @param array $applications The applications bound to the engine
+     * 
+     * @return void
+     */
+    public function injectApplications(array $applications)
+    {
+        $this->applications = $applications;
+    }
+
+    /**
+     * Injects the session manager instance to use.
+     * 
+     * @param \TechDivision\ServletEngine\SessionManager $manager The session manager instance
+     * 
+     * @return void
+     */
+    public function injectManager(SessionManager $manager)
+    {
+        $this->manager = $manager;
+    }
+
+    /**
+     * Returns the container instance.
+     *
+     * @return \TechDivision\ApplicationServer\Interfaces\ContainerInterface The container instance
+     */
+    protected function getContainer()
+    {
+        return $this->container;
+    }
+
+    /**
+     * Returns the session manager instance.
+     *
+     * @return \TechDivision\ServletEngine\SessionManager The session manager instance
+     */
+    protected function getManager()
+    {
+        return $this->manager;
+    }
     
     /**
-     * Returns the with the initialized applications.
+     * Returns the initialized applications bound to the engine.
      * 
      * @return array The array with the initialized applications
      */
     protected function getApplications()
     {
         return $this->applications;
-    }
-
-    /**
-     * Returns the deployment interface for the container for
-     * this container thread.
-     *
-     * @return \TechDivision\ApplicationServer\Interfaces\DeploymentInterface The deployment instance for this container thread
-     */
-    protected function getDeployment()
-    {
-        return $this->newInstance(
-            $this->getContainerNode()->getDeployment()->getType(),
-            array(
-                $this->getInitialContext(),
-                $this->getContainerNode()
-            )
-        );
-    }
-
-    /**
-     * Returns the container node.
-     *
-     * @return \TechDivision\ApplicationServer\Api\Node\ContainerNode The container node
-     */
-    protected function getContainerNode()
-    {
-        return $this->getContainer()->getContainerNode();
     }
 
     /**
@@ -213,5 +223,16 @@ class Engine
     protected function newInstance($className, array $args = array())
     {
         return $this->getInitialContext()->newInstance($className, $args);
+    }
+    
+    /**
+     * Register the class loader again, because in a thread the context 
+     * lost all class loader information.
+     * 
+     * @return void
+     */
+    public function registerClassLoader()
+    {
+        $this->getInitialContext()->getClassLoader()->register(true);
     }
 }

@@ -27,7 +27,7 @@ use TechDivision\Servlet\GenericServlet;
 use TechDivision\Servlet\ServletRequest;
 use TechDivision\Servlet\ServletResponse;
 use TechDivision\Servlet\ServletException;
-use TechDivision\Servlet\Http\HttpServletM
+use TechDivision\Servlet\Http\HttpServlet;
 use TechDivision\ServletEngine\AuthenticationManager;
 
 /**
@@ -75,9 +75,6 @@ abstract class Servlet extends HttpServlet
      */
     public function service(ServletRequest $servletRequest, ServletResponse $servletResponse)
     {
-        
-        // pre-initialize response
-        $servletResponse->addHeader(HttpProtocol::HEADER_NAME_SERVER, $servletRequest->getServerVar('SERVER_SOFTWARE'));
 
         // check if servlet needs authentication and return if authentication is not provided.
         if ($this->getAuthenticationRequired() && !$this->getAuthenticationManager()->handleRequest($servletRequest, $servletResponse, $this)) {

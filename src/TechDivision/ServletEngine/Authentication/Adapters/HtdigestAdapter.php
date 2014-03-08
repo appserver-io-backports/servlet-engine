@@ -69,7 +69,7 @@ class HtdigestAdapter extends AuthenticationAdapter
     public function init()
     {
         // get current web app path.
-        $webAppPath = $this->getServlet()->getServletManager()->getWebappPath();
+        $webAppPath = $this->getServlet()->getServletContext()->getWebappPath();
 
         // get content of htdigest file.
         $htDigestData = file($webAppPath . DIRECTORY_SEPARATOR . 'WEB-INF' . DIRECTORY_SEPARATOR . $this->getFilename());

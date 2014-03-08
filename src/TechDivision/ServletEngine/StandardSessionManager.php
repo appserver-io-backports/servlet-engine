@@ -21,9 +21,10 @@
 
 namespace TechDivision\ServletEngine;
 
-use TechDivision\ServletEngine\SessionSettings;
-use TechDivision\ServletEngine\SessionStorage;
+use TechDivision\Servlet\Http\HttpSession;
+use TechDivision\Storage\StorageInterface;
 use TechDivision\ServletEngine\Http\Session;
+use TechDivision\ServletEngine\SessionSettings;
 
 /**
  * A standard session manager implementation that provides session
@@ -49,16 +50,26 @@ class StandardSessionManager implements SessionManager
     /**
      * Cache storage for this session.
      *
-     * @var \TechDivision\ServletEngine\SessionStorage
+     * @var \TechDivision\Storage\StorageInterface
      */
     protected $storage;
     
     /**
      * Array to store the sessions that has already been initilized in this request.
      * 
-     * @var array
+     * @var \SplObjectStorage()
      */
-    protected $sessions = array();
+    protected $sessions;
+    
+    /**
+     * Initialize the session manager.
+     * 
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->sessions = new \SplObjectStorage();
+    }
 
     /**
      * Injects the settings
@@ -75,11 +86,11 @@ class StandardSessionManager implements SessionManager
     /**
      * Injects the storage to persist session data.
      *
-     * @param \TechDivision\ServletEngine\SessionStorage $storage The session storage to use
+     * @param \TechDivision\Storage\StorageInterface $storage The session storage to use
      *
      * @return void
      */
-    public function injectStorage(SessionStorage $storage)
+    public function injectStorage(StorageInterface $storage)
     {
         $this->storage = $storage;
     }
@@ -99,20 +110,22 @@ class StandardSessionManager implements SessionManager
         $session->injectStorage($this->storage);
         
         // attach the session to the manager and return it
-        return $this->attach($session);
+        $this->attach($session);
+        return $session;
     }
     
     /**
      * Attachs the passed session to the manager and returns the instance. If a session
      * with the session identifier already exists, it will be overwritten.
      * 
-     * @param \TechDivision\Servlet\HttpSession $session The session to attach
+     * @param \TechDivision\Servlet\Http\HttpSession $session The session to attach
      * 
-     * @return \TechDivision\Servlet\HttpSession The attached session
+     * @return \TechDivision\Servlet\Http\HttpSession The attached session
      */
     public function attach(HttpSession $session)
     {
-        return $this->sessions[$session->getId()] = $session;
+        $this->sessions->attach($session);
+        return $session;
     }
 
     /**
@@ -129,10 +142,12 @@ class StandardSessionManager implements SessionManager
      */
     public function find($id, $create = false)
     {
-        
-        // try to load the session with the passed name
-        if (array_key_exists($id, $this->sessions)) {
-            return $this->sessions[$id];
+
+        // try to load the session with the passed ID
+        foreach ($this->sessions as $session) {
+            if ($session->getId() === $id) {
+                return $session;
+            }
         }
         
         // create a new session with the requested session ID if requested
@@ -144,7 +159,7 @@ class StandardSessionManager implements SessionManager
     /** 
      * Returns all sessions actually attached to the session manager.
      * 
-     * @return array The array with sessions
+     * @return \SplObjectStoreage The container with sessions
      */
     public function getSessions()
     {

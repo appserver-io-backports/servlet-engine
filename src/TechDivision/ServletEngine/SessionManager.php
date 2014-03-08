@@ -22,6 +22,7 @@
 namespace TechDivision\ServletEngine;
 
 use TechDivision\Servlet\ServletRequest;
+use TechDivision\Servlet\Http\HttpSession;
 
 /**
  * Interface for the session managers.
@@ -49,9 +50,9 @@ interface SessionManager
      * Attachs the passed session to the manager and returns the instance. If a session
      * with the session identifier already exists, it will be overwritten.
      * 
-     * @param \TechDivision\Servlet\HttpSession $session The session to attach
+     * @param \TechDivision\Servlet\Http\HttpSession $session The session to attach
      * 
-     * @return \TechDivision\Servlet\HttpSession The attached session
+     * @return \TechDivision\Servlet\Http\HttpSession The attached session
      */
     public function attach(HttpSession $session);
 

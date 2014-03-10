@@ -278,11 +278,11 @@ class Session implements HttpSession
             $this->initializeHttpAndCookie();
         } else {
 
-           if ($this->id == null) {
-               $this->id = $this->generateRandomString(32);
-           }
-           
-           $this->sessionCookie = new Cookie(
+            if ($this->id == null) {
+                $this->id = $this->generateRandomString(32);
+            }
+            
+            $this->sessionCookie = new Cookie(
                 $this->getSessionName(),
                 $this->id,
                 $this->getSessionCookieLifetime(),

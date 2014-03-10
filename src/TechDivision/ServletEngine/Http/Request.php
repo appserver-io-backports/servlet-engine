@@ -354,7 +354,7 @@ class Request implements HttpServletRequest
             return $this->session;
         }
         
-        // if no session has already been load, initialize the session manager 
+        // if no session has already been load, initialize the session manager
         $manager = $this->getContext()->getSessionManager();
         
         // if no session manager was found, we don't support sessions

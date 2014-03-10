@@ -28,7 +28,7 @@ use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Servlet\Http\HttpServletResponse;
 use TechDivision\ServletEngine\SessionStorage;
-use TechDivision\ServletEngine\SessionSettings;
+use TechDivision\ServletEngine\DefaultSessionSettings;
 use TechDivision\ServletEngine\SessionNotStartedException;
 use TechDivision\ServletEngine\OperationNotSupportedException;
 use TechDivision\ServletEngine\DataNotSerializableException;
@@ -63,13 +63,6 @@ class Session implements HttpSession
      * @var string
      */
     const TAG_PREFIX = 'customtag-';
-
-    /**
-     * Prefix for the session name.
-     *
-     * @var string
-     */
-    const SESSION_NAME = 'PHPSESSID';
     
     /**
      * The session cookie instance.
@@ -130,6 +123,62 @@ class Session implements HttpSession
      * @var integer
      */
     protected $now;
+    
+    /**
+     * The session name to use.
+     * 
+     * @var string
+     */
+    protected $sessionName = DefaultSessionSettings::DEFAULT_SESSION_NAME;
+    
+    /**
+     * The cookie domain set for the session.
+     * 
+     * @var string
+     */
+    protected $sessionCookieDomain = Cookie::LOCALHOST;
+    
+    /**
+     * The cookie path set for the session.
+     * 
+     * @var string
+     */
+    protected $sessionCookiePath = DefaultSessionSettings::DEFAULT_SESSION_COOKIE_PATH;
+    
+    /**
+     * The session cookie lifetime.
+     * 
+     * @var integer
+     */
+    protected $sessionCookieLifetime = 0;
+    
+    /**
+     * The flag that the session cookie should only be set in a secure connection.
+     * 
+     * @var boolean
+     */
+    protected $sessionCookieSecure = false;
+    
+    /**
+     * The flag if the session should set a Http only cookie.
+     * 
+     * @var boolean
+     */
+    protected $sessionCookieHttpOnly = false;
+    
+    /**
+     * The probability the garbage collector will be invoked on the session.
+     * 
+     * @var float
+     */
+    protected $garbageCollectionProbability = 1.0;
+    
+    /**
+     * The inactivity timeout until the session will be invalidated.
+     * 
+     * @var integer
+     */
+    protected $inactivityTimeout = 1440;
 
     /**
      * Constructs this session
@@ -149,6 +198,7 @@ class Session implements HttpSession
     {
 
         $this->now = time();
+        $this->sessionCookieLifetime = time() + 86400;
         
         if ($id !== null) {
             $this->id = $id;
@@ -195,28 +245,6 @@ class Session implements HttpSession
     }
 
     /**
-     * Injects the settings
-     *
-     * @param \TechDivision\ServletEngine\SessionSettings $settings Settings for the session handling
-     *
-     * @return void
-     */
-    public function injectSettings(SessionSettings $settings)
-    {
-        $this->settings = $settings;
-    }
-    
-    /**
-     * Returns the session settings.
-     * 
-     * @return TechDivision\ServletEngine\SessionSettings The settings
-     */
-    public function getSettings()
-    {
-        return $this->settings;
-    }
-
-    /**
      * Set's the unique session identifier.
      *
      * @param string $id The unique session identifier
@@ -247,22 +275,24 @@ class Session implements HttpSession
     {
 
         if ($this->started === true) {
-            
             $this->initializeHttpAndCookie();
-            
         } else {
 
-            $this->id = $this->generateRandomString(32);
+            if ($this->id == null) {
+                $this->id = $this->generateRandomString(32);
+            }
+            
             $this->sessionCookie = new Cookie(
-                $this->getSettings()->getSessionName(),
+                $this->getSessionName(),
                 $this->id,
-                $this->getSettings()->getSessionCookieLifetime(),
+                $this->getSessionCookieLifetime(),
                 null,
-                $this->getSettings()->getSessionCookieDomain(),
-                $this->getSettings()->getSessionCookiePath(),
-                $this->getSettings()->getSessionCookieSecure(),
-                $this->getSettings()->getSessionCookieHttpOnly()
+                $this->getSessionCookieDomain(),
+                $this->getSessionCookiePath(),
+                $this->getSessionCookieSecure(),
+                $this->getSessionCookieHttpOnly()
             );
+            
             $this->response->addCookie($this->sessionCookie);
             
             $this->lastActivityTimestamp = $this->now;
@@ -523,9 +553,9 @@ class Session implements HttpSession
                 $this->writeSessionInfoCacheEntry();
             }
             $this->started = false;
-            $decimals = strlen(strrchr($this->getSettings()->getGarbageCollectionProbability(), '.')) - 1;
+            $decimals = strlen(strrchr($this->getGarbageCollectionProbability(), '.')) - 1;
             $factor = ($decimals > - 1) ? $decimals * 10 : 1;
-            if (rand(0, 100 * $factor) <= ($this->getSettings()->getGarbageCollectionProbability() * $factor)) {
+            if (rand(0, 100 * $factor) <= ($this->getGarbageCollectionProbability() * $factor)) {
                 $this->collectGarbage();
             }
         }
@@ -540,10 +570,10 @@ class Session implements HttpSession
     {
         $lastActivitySecondsAgo = $this->now - $this->lastActivityTimestamp;
         $expired = false;
-        if ($this->getSettings()->getInactivityTimeout() !== 0 && $lastActivitySecondsAgo > $this->getSettings()->getInactivityTimeout()) {
+        if ($this->getInactivityTimeout() !== 0 && $lastActivitySecondsAgo > $this->getInactivityTimeout()) {
             $this->started = true;
             $this->id = $this->sessionCookie->getValue();
-            $this->destroy(sprintf('Session %s was inactive for %s seconds, more than the configured timeout of %s seconds.', $this->id, $lastActivitySecondsAgo, $this->getSettings()->getInactivityTimeout()));
+            $this->destroy(sprintf('Session %s was inactive for %s seconds, more than the configured timeout of %s seconds.', $this->id, $lastActivitySecondsAgo, $this->getInactivityTimeout()));
             $expired = true;
         }
         return $expired;
@@ -556,17 +586,17 @@ class Session implements HttpSession
      */
     protected function initializeHttpAndCookie()
     {
-        if ($this->request->hasCookie($this->getSettings()->getSessionName())) {
-            $id = $this->request->getCookie($this->getSettings()->getSessionName())->getValue();
+        if ($this->request->hasCookie($this->getSessionName())) {
+            $id = $this->request->getCookie($this->getSessionName())->getValue();
             $this->sessionCookie = new Cookie(
-                $this->getSettings()->getSessionName(),
+                $this->getSessionName(),
                 $id,
-                $this->getSettings()->getSessionCookieLifetime(),
+                $this->getSessionCookieLifetime(),
                 null,
-                $this->getSettings()->getSessionCookieDomain(),
-                $this->getSettings()->getSessionCookiePath(),
-                $this->getSettings()->getSessionCookieSecure(),
-                $this->getSettings()->getSessionCookieHttpOnly()
+                $this->getSessionCookieDomain(),
+                $this->getSessionCookiePath(),
+                $this->getSessionCookieSecure(),
+                $this->getSessionCookieHttpOnly()
             );
         }
     }
@@ -639,7 +669,7 @@ class Session implements HttpSession
         if ($this->started !== true) {
             throw new SessionNotStartedException('Tried to destroy a session which has not been started yet.');
         }
-        if ($this->response->hasCookie($this->getSettings()->getSessionName()) === false) {
+        if ($this->response->hasCookie($this->getSessionName()) === false) {
             $this->response->addCookie($this->sessionCookie);
         }
         $this->sessionCookie->expire();
@@ -659,10 +689,10 @@ class Session implements HttpSession
     public function collectGarbage()
     {
         $sessionRemovalCount = 0;
-        if ($this->getSettings()->getInactivityTimeout() !== 0) {
+        if ($this->getInactivityTimeout() !== 0) {
             foreach ($this->storage->getByTag('session') as $sessionInfo) {
                 $lastActivitySecondsAgo = $this->now - $sessionInfo['lastActivityTimestamp'];
-                if ($lastActivitySecondsAgo > $this->getSettings()->getInactivityTimeout()) {
+                if ($lastActivitySecondsAgo > $this->getInactivityTimeout()) {
                     $this->storage->flushByTag($this->id);
                     $sessionRemovalCount ++;
                 }
@@ -679,10 +709,191 @@ class Session implements HttpSession
      */
     protected function generateRandomString($length = 32)
     {
+        
+        // prepare an array with the chars used to create a random string
+        $letters = str_split('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz');
+        
+        // create and return the random string
         $bytes = '';
         foreach (range(1, $length) as $i) {
-            $bytes = chr(mt_rand(0, 256)) . $bytes;
+            $bytes = $letters[mt_rand(0, sizeof($letters) - 1)] . $bytes;
         }
         return $bytes;
+    }
+    
+    /**
+     * Returns the session name to use.
+     * 
+     * @return string The session name
+     */
+    public function getSessionName()
+    {
+        return $this->sessionName;
+    }
+    
+    /**
+     * Returns the session cookie lifetime.
+     * 
+     * @return integer
+     */
+    public function getSessionCookieLifetime()
+    {
+        return $this->sessionCookieLifetime;
+    }
+    
+    /**
+     * Returns the cookie domain set for the session.
+     * 
+     * @return string
+     */
+    public function getSessionCookieDomain()
+    {
+        return $this->sessionCookieDomain;
+    }
+    
+    /**
+     * Returns the cookie path set for the session.
+     * 
+     * @return string
+     */
+    public function getSessionCookiePath()
+    {
+        return $this->sessionCookiePath;
+    }
+    
+    /**
+     * Returns the flag that the session cookie should only be set in a secure connection.
+     * 
+     * @return boolean TRUE if a secure cookie should be set, else FALSE
+     */
+    public function getSessionCookieSecure()
+    {
+        return $this->sessionCookieSecure;
+    }
+    
+    /**
+     * Returns the flag if the session should set a Http only cookie.
+     * 
+     * @return boolean TRUE if a Http only cookie should be used
+     */
+    public function getSessionCookieHttpOnly()
+    {
+        return $this->sessionCookieHttpOnly;
+    }
+    
+    /**
+     * Returns the probability the garbage collector will be invoked on the session.
+     * 
+     * @return float The garbage collector probability
+     */
+    public function getGarbageCollectionProbability()
+    {
+        return $this->garbageCollectionProbability;
+    }
+    
+    /**
+     * Returns the inactivity timeout until the session will be invalidated.
+     * 
+     * @return integer The inactivity timeout in seconds
+     */
+    public function getInactivityTimeout()
+    {
+        return $this->inactivityTimeout;
+    }
+
+    /**
+     * Returns the session name to use.
+     *
+     * @param string $sessionName The session name
+     * 
+     * @return void
+     */
+    public function setSessionName($sessionName)
+    {
+        $this->sessionName = $sessionName;
+    }
+    
+    /**
+     * Returns the session cookie lifetime.
+     *
+     * @param integer $sessionCookieLifetime session cookie lifetime
+     * 
+     * @return void
+     */
+    public function setSessionCookieLifetime($sessionCookieLifetime)
+    {
+        $this->sessionCookieLifetime = $sessionCookieLifetime;
+    }
+    
+    /**
+     * Returns the cookie domain set for the session.
+     *
+     * @param string $sessionCookieDomain The cookie domain set for the session
+     * 
+     * @return void
+     */
+    public function setSessionCookieDomain($sessionCookieDomain)
+    {
+        $this->sessionCookieDomain = $sessionCookieDomain;
+    }
+    
+    /**
+     * Returns the cookie path set for the session.
+     *
+     * @param string $sessionCookiePath The cookie path set for the session
+     * 
+     * @return void
+     */
+    public function setSessionCookiePath($sessionCookiePath)
+    {
+        $this->sessionCookiePath = $sessionCookiePath;
+    }
+    
+    /**
+     * Returns the flag that the session cookie should only be set in a secure connection.
+     *
+     * @param boolean $sessionCookieSecure TRUE if a secure cookie should be set, else FALSE
+     * 
+     * @return void
+     */
+    public function setSessionCookieSecure($sessionCookieSecure)
+    {
+        $this->sessionCookieSecure = $sessionCookieSecure;
+    }
+    
+    /**
+     * Returns the flag if the session should set a Http only cookie.
+     *
+     * @param boolean $sessionCookieHttpOnly TRUE if a Http only cookie should be used
+     * 
+     * @return void
+     */
+    public function setSessionCookieHttpOnly($sessionCookieHttpOnly)
+    {
+        $this->sessionCookieHttpOnly = $sessionCookieHttpOnly;
+    }
+    
+    /**
+     * Returns the probability the garbage collector will be invoked on the session.
+     *
+     * @param float $garbageCollectionProbability The garbage collector probability
+     * 
+     * @return void
+     */
+    public function setGarbageCollectionProbability($garbageCollectionProbability)
+    {
+        $this->garbageCollectionProbability = $garbageCollectionProbability;
+    }
+    
+    /**
+     * Returns the inactivity timeout until the session will be invalidated.
+     *
+     * @param integer $inactivityTimeout The inactivity timeout in seconds
+     * 
+     * @return void
+     */
+    public function setInactivityTimeout($inactivityTimeout)
+    {
+        $this->inactivityTimeout = $inactivityTimeout;
     }
 }

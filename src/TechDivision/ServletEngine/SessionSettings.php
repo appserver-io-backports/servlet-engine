@@ -32,28 +32,28 @@ interface SessionSettings
     /**
      * Returns the session name.
      * 
-     * @return string
+     * @return string The session name
      */
     public function getSessionName();
     
     /**
      * Returns the session cookie lifetime.
      * 
-     * @return integer
+     * @return integer The session cookie lifetime
      */
     public function getSessionCookieLifetime();
     
     /**
      * Returns the cookie domain set for the session.
      * 
-     * @return string
+     * @return string The cookie domain set for the session
      */
     public function getSessionCookieDomain();
     
     /**
      * Returns the cookie path set for the session.
      * 
-     * @return string
+     * @return string The cookie path set for the session
      */
     public function getSessionCookiePath();
     

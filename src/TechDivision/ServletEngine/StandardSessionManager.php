@@ -98,16 +98,25 @@ class StandardSessionManager implements SessionManager
     /**
      * Creates a new session with the passed session ID and session name if give.
      * 
-     * @param string $id The session ID used to create the session
+     * @param string|null $id The session ID used to create the session
      *
      * @return \TechDivision\Servlet\HttpSession The requested session
      */
-    public function create($id)
+    public function create($id = null)
     {
         // initialize and return the session instance
         $session = new Session($id, time());
-        $session->injectSettings($this->settings);
         $session->injectStorage($this->storage);
+        
+        // copy the default session configuration from the settings
+        $session->setSessionName($this->getSettings()->getSessionName());
+        $session->setSessionCookieLifetime($this->getSettings()->getSessionCookieLifetime());
+        $session->setSessionCookieDomain($this->getSettings()->getSessionCookieDomain());
+        $session->setSessionCookiePath($this->getSettings()->getSessionCookiePath());
+        $session->setSessionCookieSecure($this->getSettings()->getSessionCookieSecure());
+        $session->setSessionCookieHttpOnly($this->getSettings()->getSessionCookieHttpOnly());
+        $session->setGarbageCollectionProbability($this->getSettings()->getGarbageCollectionProbability());
+        $session->setInactivityTimeout($this->getSettings()->getInactivityTimeout());
         
         // attach the session to the manager and return it
         $this->attach($session);
@@ -135,12 +144,12 @@ class StandardSessionManager implements SessionManager
      * precedence. If no session id is found, a new one is created and assigned 
      * to the request.
      * 
-     * @param string  $id     The ID of the session to find
-     * @param boolean $create If TRUE, a new session will be created if the session with the passed ID can't be found
+     * @param string|null $id     The ID of the session to find
+     * @param boolean     $create If TRUE, a new session will be created if the session with the passed ID can't be found
      *
      * @return \TechDivision\Servlet\HttpSession The requested session
      */
-    public function find($id, $create = false)
+    public function find($id = null, $create = false)
     {
 
         // try to load the session with the passed ID
@@ -164,5 +173,15 @@ class StandardSessionManager implements SessionManager
     public function getSessions()
     {
         return $this->sessions;
+    }
+    
+    /**
+     * Returns the session settings.
+     * 
+     * @return \TechDivision\ServletEngine\SessionSettings The session settings
+     */
+    public function getSettings()
+    {
+        return $this->settings;
     }
 }

@@ -113,19 +113,19 @@ class ServletLocator implements ResourceLocator
     public function locate(ServletRequest $servletRequest)
     {
         
-        // build the file-path of the request
-        $pathInfo = $servletRequest->getPathInfo();
+        // load the path to the (almost virtual servlet)
+        $servletPath = $servletRequest->getServletPath();
         
         // iterate over all servlets and return the matching one
         foreach ($this->getServletMappings() as $urlPattern => $servletName) {
-            if (fnmatch($urlPattern, $pathInfo)) {
+            if (fnmatch($urlPattern, $servletPath)) {
                 return $this->getServletContext()->getServlet($servletName);
             }
         }
         
-        // throw an exception if no servlet matches the path info
+        // throw an exception if no servlet matches the servlet path
         throw new ServletNotFoundException(
-            sprintf("Can't find servlet for requested path info %s", $pathInfo)
+            sprintf("Can't find servlet for requested path %s", $servletPath)
         );
     }
 }

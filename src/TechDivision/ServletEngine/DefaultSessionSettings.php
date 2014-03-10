@@ -125,7 +125,7 @@ class DefaultSessionSettings implements SessionSettings
     /**
      * Returns the session cookie lifetime.
      * 
-     * @return integer
+     * @return integer The session cookie lifetime
      */
     public function getSessionCookieLifetime()
     {
@@ -135,7 +135,7 @@ class DefaultSessionSettings implements SessionSettings
     /**
      * Returns the cookie domain set for the session.
      * 
-     * @return string
+     * @return string The cookie domain set for the session
      */
     public function getSessionCookieDomain()
     {
@@ -145,7 +145,7 @@ class DefaultSessionSettings implements SessionSettings
     /**
      * Returns the cookie path set for the session.
      * 
-     * @return string
+     * @return string The cookie path set for the session
      */
     public function getSessionCookiePath()
     {

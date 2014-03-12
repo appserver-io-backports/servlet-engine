@@ -187,7 +187,7 @@ class Application extends AbstractApplication
         $servlet = $this->getServletLocator()->locate($servletRequest);
         
         // secure the servlet if necessary
-        $this->secureServlet($servlet, $servletRequest->getPathInfo());
+        $this->secureServlet($servlet, $servletRequest->getServletPath());
         
         // return the servlet instance
         return $servlet;
@@ -197,17 +197,17 @@ class Application extends AbstractApplication
      * Check if the requested URI matches a secured url pattern and
      * secure the servlet with the configured authentication method.
      *
-     * @param \TechDivision\Servlet\Servlet $servlet  A servlet instance
-     * @param string                        $pathInfo The URI to resolve
+     * @param \TechDivision\Servlet\Servlet $servlet     A servlet instance
+     * @param string                        $servletPath The servlet path information
      *
      * @return void
      */
-    protected function secureServlet(Servlet $servlet, $pathInfo)
+    protected function secureServlet(Servlet $servlet, $servletPath)
     {
         // iterate over all servlets and return the matching one
         foreach ($this->getServletContext()->getSecuredUrlConfigs() as $securedUrlConfig) {
             list ($urlPattern, $auth) = array_values($securedUrlConfig);
-            if (fnmatch($urlPattern, $pathInfo)) {
+            if (fnmatch($urlPattern, $servletPath)) {
                 $servlet->injectSecuredUrlConfig($auth);
                 $servlet->setAuthenticationRequired(true);
                 break;

@@ -168,17 +168,4 @@ class ServletConfiguration implements ServletConfig
             return $this->initParameter[$name];
         }
     }
-
-    /**
-     * Returns the server variables.
-     *
-     * @return array The array with the server variables
-     */
-    public function getServerVars()
-    {
-        return array(
-            'SERVER_ADMIN' => $this->getConfiguration()->getServerAdmin(),
-            'SERVER_SOFTWARE' => $this->getConfiguration()->getServerAdmin()
-        );
-    }
 }

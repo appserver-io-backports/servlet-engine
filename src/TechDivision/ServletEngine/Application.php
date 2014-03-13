@@ -1,5 +1,4 @@
 <?php
-
 /**
  * TechDivision\ServletEngine\Application
  *
@@ -14,62 +13,25 @@
  * @category  Appserver
  * @package   TechDivision_ServletEngine
  * @author    Tim Wagner <tw@techdivision.com>
- * @copyright 2014 TechDivision GmbH <info@techdivision.com>
+ * @copyright 2013 TechDivision GmbH <info@techdivision.com>
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
 
 namespace TechDivision\ServletEngine;
 
-
-use TechDivision\Servlet\Servlet;
-use TechDivision\Servlet\ServletContext;
-use TechDivision\Servlet\ServletRequest;
-use TechDivision\ApplicationServer\Vhost;
-use TechDivision\ApplicationServer\Configuration;
-use TechDivision\ApplicationServer\AbstractApplication;
-
 /**
- * The application instance holds all information about the deployed application
- * and provides a reference to the servlet manager and the initial context.
+ * Interface ApplicationInterface
  *
  * @category  Appserver
  * @package   TechDivision_ServletEngine
  * @author    Tim Wagner <tw@techdivision.com>
- * @copyright 2014 TechDivision GmbH <info@techdivision.com>
+ * @copyright 2013 TechDivision GmbH <info@techdivision.com>
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class Application extends AbstractApplication
+interface Application
 {
-
-    /**
-     * The servlet manager.
-     *
-     * @var \TechDivision\Servlet\ServletContext
-     */
-    protected $servletContext;
-
-    /**
-     * The servlet locator.
-     *
-     * @var \TechDivision\ServletEngine\ServletLocator
-     */
-    protected $servletLocator;
-
-    /**
-     * Array with available VHost configurations.
-     * 
-     * @array
-     */
-    protected $vhosts = array();
-    
-    /**
-     * The servlet cache that maps a request to the servlet that has to handle it.
-     * 
-     * @var array
-     */
-    protected $servletCache = array();
 
     /**
      * Has been automatically invoked by the container after the application
@@ -77,141 +39,62 @@ class Application extends AbstractApplication
      *
      * @return \TechDivision\ServletEngine\Application The connected application
      */
-    public function connect()
-    {
-
-        // also initialize the vhost configuration
-        parent::connect();
-
-        // initialize the class loader with the additional folders
-        set_include_path(get_include_path() . PATH_SEPARATOR . $this->getWebappPath());
-        set_include_path(get_include_path() . PATH_SEPARATOR . $this->getWebappPath() . DIRECTORY_SEPARATOR . 'WEB-INF' . DIRECTORY_SEPARATOR . 'classes');
-        set_include_path(get_include_path() . PATH_SEPARATOR . $this->getWebappPath() . DIRECTORY_SEPARATOR . 'WEB-INF' . DIRECTORY_SEPARATOR . 'lib');
-
-        // initialize the servlet manager instance
-        $servletContext = $this->newInstance('TechDivision\ServletEngine\ServletManager', array(
-            $this
-        ));
-
-        // set the servlet manager
-        $this->setServletContext($servletContext->initialize());
-        
-        // initialize the servlet locator instance
-        $servletLocator = $this->newInstance('TechDivision\ServletEngine\ServletLocator', array(
-            $this->getServletContext()
-        ));
-        
-        // set the servlet locator
-        $this->setServletLocator($servletLocator);
-
-        // return the instance itself
-        return $this;
-    }
+    public function connect();
 
     /**
-     * Return's the server software.
+     * Returns the application name (that has to be the class namespace,
+     * e. g. TechDivision\Example).
      *
-     * @return string The server software
+     * @return string The application name
      */
-    public function getServerSoftware()
-    {
-        return $this->getContainerNode()->getHost()->getServerSoftware();
-    }
+    public function getName();
 
     /**
-     * Return's the server admin email.
+     * Return's the applications servers base directory, which is
+     * /opt/appserver by default.
      *
-     * @return string The server admin email
+     * @param string $directoryToAppend Directory to append before returning the base directory
+     *
+     * @return string The application server's base directory
      */
-    public function getServerAdmin()
-    {
-        return $this->getContainerNode()->getHost()->getServerAdmin();
-    }
+    public function getBaseDirectory($directoryToAppend = null);
 
     /**
-     * Sets the applications servlet context instance.
+     * Returns the path to the appserver webapp base directory.
      *
-     * @param \TechDivision\Servlet\ServletContext $servletContext The servlet context instance
-     *
-     * @return void
+     * @return string The path to the appserver webapp base directory
      */
-    public function setServletContext(ServletContext $servletContext)
-    {
-        $this->servletContext = $servletContext;
-    }
+    public function getAppBase();
 
     /**
-     * Return the servlet context instance.
+     * Return's the path to the web application.
      *
-     * @return \TechDivision\Servlet\ServletContext The servlet context instance
+     * @return string The path to the web application
      */
-    public function getServletContext()
-    {
-        return $this->servletContext;
-    }
+    public function getWebappPath();
 
     /**
-     * Sets the applications servlet locator instance.
+     * Creates a new instance of the passed class name and passes the
+     * args to the instance constructor.
      *
-     * @param \TechDivision\ServletEngine\ResourceLocator $servletLocator The servlet locator instance
+     * @param string $className The class name to create the instance of
+     * @param array  $args      The parameters to pass to the constructor
      *
-     * @return void
+     * @return object The created instance
      */
-    public function setServletLocator(ResourceLocator $servletLocator)
-    {
-        $this->servletLocator = $servletLocator;
-    }
+    public function newInstance($className, array $args = array());
 
     /**
-     * Return the servlet locator instance.
+     * Returns the application as a node representation.
      *
-     * @return \TechDivision\ServletEngine\ResourceLocator The servlet locator instance
+     * @return \TechDivision\ApplicationServer\Api\Node\AppNode The node representation of the application
      */
-    public function getServletLocator()
-    {
-        return $this->servletLocator;
-    }
+    public function newAppNode();
 
     /**
-     * Locates and returns the servlet instance that handles
-     * the request passed as parameter.
-     * 
-     * @param \TechDivision\Servlet\ServletRequest $servletRequest The request instance
+     * Return'sthe app node the application is belonging to.
      *
-     * @return \TechDivision\Servlet\Servlet The servlet instance to handle the request
+     * @return \TechDivision\ApplicationServer\Api\Node\AppNode The app node the application is belonging to
      */
-    public function locate(ServletRequest $servletRequest)
-    {
-        
-        // try to locate the servlet
-        $servlet = $this->getServletLocator()->locate($servletRequest);
-        
-        // secure the servlet if necessary
-        $this->secureServlet($servlet, $servletRequest->getServletPath());
-        
-        // return the servlet instance
-        return $servlet;
-    }
-
-    /**
-     * Check if the requested URI matches a secured url pattern and
-     * secure the servlet with the configured authentication method.
-     *
-     * @param \TechDivision\Servlet\Servlet $servlet     A servlet instance
-     * @param string                        $servletPath The servlet path information
-     *
-     * @return void
-     */
-    protected function secureServlet(Servlet $servlet, $servletPath)
-    {
-        // iterate over all servlets and return the matching one
-        foreach ($this->getServletContext()->getSecuredUrlConfigs() as $securedUrlConfig) {
-            list ($urlPattern, $auth) = array_values($securedUrlConfig);
-            if (fnmatch($urlPattern, $servletPath)) {
-                $servlet->injectSecuredUrlConfig($auth);
-                $servlet->setAuthenticationRequired(true);
-                break;
-            }
-        }
-    }
+    public function getAppNode();
 }

@@ -215,7 +215,7 @@ class ServletApplication implements Application, ApplicationInterface
         $baseDirectory = $this->baseDirectory;
         if ($directoryToAppend != null) {
             $baseDirectory .= $directoryToAppend;
-        }   
+        }
         return $baseDirectory;
     }
 

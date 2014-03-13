@@ -169,7 +169,7 @@ class ServletDeployment implements Deployment
         $baseDirectory = $this->baseDirectory;
         if ($directoryToAppend != null) {
             $baseDirectory .= $directoryToAppend;
-        }   
+        }
         return $baseDirectory;
     }
 

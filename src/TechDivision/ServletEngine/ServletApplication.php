@@ -441,7 +441,7 @@ class ServletApplication implements Application, ApplicationInterface
      */
     public function newAppNode()
     {
-        throw new \Excecption(__METHOD__ . ' not implemented');
+        throw new \Exception(__METHOD__ . ' not implemented');
     }
 
     /**
@@ -453,7 +453,7 @@ class ServletApplication implements Application, ApplicationInterface
      */
     public function getAppNode()
     {
-        throw new \Excecption(__METHOD__ . ' not implemented');
+        throw new \Exception(__METHOD__ . ' not implemented');
     }
 
     /**
@@ -468,6 +468,6 @@ class ServletApplication implements Application, ApplicationInterface
      */
     public function newInstance($className, array $args = array())
     {
-        throw new \Excecption(__METHOD__ . ' not implemented');
+        throw new \Exception(__METHOD__ . ' not implemented');
     }
 }

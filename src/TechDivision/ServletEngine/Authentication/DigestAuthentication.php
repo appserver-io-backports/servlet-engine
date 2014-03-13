@@ -66,12 +66,12 @@ class DigestAuthentication extends AbstractAuthentication
                     $bits = explode("=", $element);
                     $data[$bits[0]] = str_replace('"', '', $bits[1]);
                 }
-
+                
+                // initialize the adapter class
+                $authAdapterClass = 'TechDivision\ServletEngine\Authentication\Adapters\\' . ucfirst($adapterType) . 'Adapter';
+                
                 // instantiate configured authentication adapter
-                $authAdapter = $this->getServlet()->getServletContext()->getApplication()->newInstance(
-                    'TechDivision\ServletEngine\Authentication\Adapters\\' . ucfirst($adapterType) . 'Adapter',
-                    array($options, $this->getServlet())
-                );
+                $authAdapter = new $authAdapterClass($options, $this->getServlet());
 
                 // delegate authentication to adapter
                 if ($authAdapter->authenticate($data, $req->getMethod())) {

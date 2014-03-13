@@ -69,11 +69,11 @@ class BasicAuthentication extends AbstractAuthentication
                 // get real credentials
                 list($user, $pwd) = explode(':', $credentials);
 
+                // initialize the adapter class
+                $authAdapterClass = 'TechDivision\ServletEngine\Authentication\Adapters\\' . ucfirst($adapterType) . 'Adapter';
+                
                 // instantiate configured authentication adapter
-                $authAdapter = $this->getServlet()->getServletContext()->getApplication()->newInstance(
-                    'TechDivision\ServletEngine\Authentication\Adapters\\' . ucfirst($adapterType) . 'Adapter',
-                    array($options, $this->getServlet())
-                );
+                $authAdapter = new $authAdapterClass($options, $this->getServlet());
 
                 // delegate authentication to adapter
                 if ($authAdapter->authenticate($user, $pwd)) {

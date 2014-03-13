@@ -150,13 +150,10 @@ class ServletManager implements ServletContext
                 }
                 
                 // instantiate the servlet
-                $instance = $this->getApplication()->newInstance($className);
+                $instance = new $className();
                 
                 // initialize the servlet configuration
-                $servletConfig = $this->getApplication()->newInstance(
-                    'TechDivision\ServletEngine\ServletConfiguration',
-                    array($this)
-                );
+                $servletConfig = new ServletConfiguration($this);
                 
                 // set the unique servlet name
                 $servletConfig->setServletName($servletName);

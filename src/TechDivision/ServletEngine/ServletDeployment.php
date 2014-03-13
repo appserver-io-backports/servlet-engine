@@ -1,7 +1,7 @@
 <?php
 
 /**
- * TechDivision\ServletEngine\WebContainerDeployment
+ * TechDivision\ServletEngine\ServletDeployment
  *
  * NOTICE OF LICENSE
  *
@@ -22,7 +22,6 @@
 namespace TechDivision\ServletEngine;
 
 use TechDivision\ServletEngine\Application;
-use TechDivision\ApplicationServer\Api\Node\NodeInterface;
 use TechDivision\ApplicationServer\Interfaces\ContextInterface;
 
 /**
@@ -35,15 +34,8 @@ use TechDivision\ApplicationServer\Interfaces\ContextInterface;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class WebContainerDeployment implements Deployment
+class ServletDeployment implements Deployment
 {
-
-    /**
-     * The container node the deployment is for.
-     *
-     * @var \TechDivision\ApplicationServer\Api\Node\NodeInterface
-     */
-    protected $containerNode;
     
     /**
      * Array with the initialized applications.
@@ -74,17 +66,53 @@ class WebContainerDeployment implements Deployment
     protected $documentRoot;
     
     /**
-     * Initializes the deployment with the container thread.
-     *
+     * The servlet engines base directory.
+     * 
+     * @var string
+     */
+    protected $baseDirectory;
+    
+    /**
+     * The path, relative to the base directory, containing the web applications.
+     * 
+     * @var string
+     */
+    protected $appBase;
+    
+    /**
+     * Injects the initial context instance.
+     * 
      * @param \TechDivision\ApplicationServer\Interfaces\ContextInterface $initialContext The initial context instance
-     * @param \TechDivision\ApplicationServer\Api\Node\NodeInterface      $containerNode  The container node the deployment is for
-     *
+     * 
      * @return void
      */
-    public function __construct(ContextInterface $initialContext, NodeInterface $containerNode)
+    public function injectInitialContext(ContextInterface $initialContext)
     {
         $this->initialContext = $initialContext;
-        $this->containerNode = $containerNode;
+    }
+    
+    /**
+     * Injects the servlet engines base directory.
+     * 
+     * @param string $baseDirectory The servlet engines base directory
+     * 
+     * @return void
+     */
+    public function injectBaseDirectory($baseDirectory)
+    {
+        $this->baseDirectory = $baseDirectory;
+    }
+    
+    /**
+     * Injects path, relative to the base directory, containing the web applications.
+     * 
+     * @param string $appBase The path, relative to the base directory, containing the web applications
+     * 
+     * @return void
+     */
+    public function injectAppBase($appBase)
+    {
+        $this->appBase = $appBase;
     }
     
     /**
@@ -100,18 +128,6 @@ class WebContainerDeployment implements Deployment
     }
     
     /**
-     * Injects the document root containing the web applications.
-     * 
-     * @param string $documentRoot The document root
-     * 
-     * @return void
-     */
-    public function injectDocumentRoot($documentRoot)
-    {
-        $this->documentRoot = $documentRoot;
-    }
-    
-    /**
      * Returns the array with the virtual host configuration.
      * 
      * @return array The array with the virtual host configuration
@@ -119,16 +135,6 @@ class WebContainerDeployment implements Deployment
     public function getVirtualHosts()
     {
         return $this->virtualHosts;
-    }
-    
-    /**
-     * Returns the document root containing the web applications.
-     * 
-     * @return string The document root
-     */
-    public function getDocumentRoot()
-    {
-        return $this->documentRoot;
     }
     
     /**
@@ -142,44 +148,6 @@ class WebContainerDeployment implements Deployment
     }
     
     /**
-     * Returns the container node the deployment is for.
-     *
-     * @return \TechDivision\ApplicationServer\Api\Node\NodeInterface The container node
-     */
-    public function getContainerNode()
-    {
-        return $this->containerNode;
-    }
-    
-    /**
-     * Connects the passed application to the system configuration.
-     *
-     * @param \TechDivision\ServletEngine\Application $application The application to be prepared
-     *
-     * @return void
-     */
-    protected function addApplicationToSystemConfiguration(Application $application)
-    {
-    
-        // create a new API app service instance
-        $appService = $this->newService('TechDivision\ApplicationServer\Api\AppService');
-        $appNode = $appService->loadByWebappPath($application->getWebappPath());
-    
-        // check if the application has already been attached to the container
-        if ($appNode == null) {
-            $application->newAppNode($this->getContainerNode());
-        } else {
-            $application->setAppNode($appNode);
-        }
-    
-        // persist the application
-        $appService->persist($application->getAppNode());
-    
-        // connect the application to the container
-        $application->connect();
-    }
-    
-    /**
      * Return's the deployed applications.
      *
      * @return array The deployed applications
@@ -188,56 +156,31 @@ class WebContainerDeployment implements Deployment
     {
         return $this->applications;
     }
-    
+
     /**
-     * (non-PHPdoc)
+     * Returns the servlet engines base directory.
      *
-     * @param string $className The fully qualified class name to return the instance for
-     * @param array  $args      Arguments to pass to the constructor of the instance
+     * @param string $directoryToAppend The directory to append to the base directory
      *
-     * @return object The instance itself
-     * @see \TechDivision\ApplicationServer\InitialContext::newInstance()
-     */
-    public function newInstance($className, array $args = array())
-    {
-        return $this->getInitialContext()->newInstance($className, $args);
-    }
-    
-    /**
-     * (non-PHPdoc)
-     *
-     * @param string $className The API service class name to return the instance for
-     *
-     * @return \TechDivision\ApplicationServer\Api\ServiceInterface The service instance
-     * @see \TechDivision\ApplicationServer\InitialContext::newService()
-     */
-    public function newService($className)
-    {
-        return $this->getInitialContext()->newService($className);
-    }
-    
-    /**
-     * (non-PHPdoc)
-     *
-     * @param string|null $directoryToAppend Append this directory to the base directory before returning it
-     *
-     * @return string The base directory
-     * @see \TechDivision\ApplicationServer\Api\ContainerService::getBaseDirectory()
+     * @return string The base directory with appended dir if given
      */
     public function getBaseDirectory($directoryToAppend = null)
     {
-        return $this->newService('TechDivision\ApplicationServer\Api\ContainerService')->getBaseDirectory($directoryToAppend);
+        $baseDirectory = $this->baseDirectory;
+        if ($directoryToAppend != null) {
+            $baseDirectory .= $directoryToAppend;
+        }
+        return $baseDirectory;
     }
 
     /**
-     * (non-PHPdoc)
+     * Returns the path, relative to the base directory, containing the web applications.
      *
-     * @return string The application base directory for this container
-     * @see \TechDivision\ApplicationServer\Api\ContainerService::getAppBase()
+     * @return string The redirectory containing the web applications
      */
     public function getAppBase()
     {
-        return $this->getDocumentRoot();
+        return $this->appBase;
     }
 
     /**
@@ -247,22 +190,19 @@ class WebContainerDeployment implements Deployment
      */
     public function deploy()
     {
-
+        
         // gather all the deployed web applications
-        foreach (new \FilesystemIterator($this->getAppBase()) as $folder) {
+        foreach (new \FilesystemIterator($this->getBaseDirectory($this->getAppBase())) as $folder) {
             
             // check if file or subdirectory has been found
             if ($folder->isDir() === true) {
-
+                
                 // initialize the application instance
-                $application = $this->newInstance(
-                    '\TechDivision\ServletEngine\WebContainerApplication',
-                    array(
-                        $this->getInitialContext(),
-                        $this->getContainerNode(),
-                        $folder->getBasename()
-                    )
-                );
+                $application = new ServletApplication();
+                $application->injectName($folder->getBasename());
+                $application->injectInitialContext($this->getInitialContext());
+                $application->injectBaseDirectory($this->getBaseDirectory());
+                $application->injectAppBase($this->getAppBase());
 
                 // add the application to the available applications
                 $this->addApplication($application);
@@ -284,8 +224,8 @@ class WebContainerDeployment implements Deployment
     public function addApplication(Application $application)
     {
 
-        // adds the application to the system configuration
-        $this->addApplicationToSystemConfiguration($application);
+        // initialize and connect the application
+        $application->connect();
         
         /*
          * Build an array with patterns as key and an array with application name and document root as value. This
@@ -322,15 +262,5 @@ class WebContainerDeployment implements Deployment
         
         // finally APPEND a wildcard pattern for each application to the patterns array
         $this->applications = $this->applications + array('/^[a-z0-9-.]*\/' . $application->getName() . '(\/([a-z0-9+\$_-]\.?)+)*\/?/' => $application);
-
-        // log a message that the app has been started
-        $this->getInitialContext()->getSystemLogger()->debug(
-            sprintf(
-                'Successfully started app %s in container %s',
-                $application->getName(),
-                $application->getWebappPath(),
-                $application->getContainerNode()->getName()
-            )
-        );
     }
 }

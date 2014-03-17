@@ -44,13 +44,13 @@ abstract class AuthenticationAdapter
      * @var array
      */
     protected $options;
-
+    
     /**
-     * Current servlet which needs authentication.
+     * The path to the actual web application (to resolve relative URLs).
      * 
-     * @var \TechDivision\Servlet\Servlet
+     * @var string
      */
-    protected $servlet;
+    protected $webappPath;
 
     /**
      * The filename of the htdigest file.
@@ -62,15 +62,18 @@ abstract class AuthenticationAdapter
     /**
      * Instantiates an authentication adapter.
      *
-     * @param array                         $options Necessary options for specific adapter.
-     * @param \TechDivision\Servlet\Servlet $servlet A servlet instance
+     * @param array $securedUrlConfig The security configuration matching this adapter.
      */
-    public function __construct($options, Servlet $servlet)
+    public function __construct($securedUrlConfig)
     {
-        $this->options = $options;
-        $this->servlet = $servlet;
-
-        $this->setFilename($options['file']);
+        // initialize the options and the webapp path
+        $this->setOptions($securedUrlConfig['auth']['options']);
+        
+        // set the absolute path to the filename containing the users + passwords
+        $this->setFilename($securedUrlConfig['webapp-path'] . DIRECTORY_SEPARATOR . $this->options['file']);
+        
+        // initialize the adapter implementations
+        $this->init();
     }
 
     /**
@@ -79,28 +82,6 @@ abstract class AuthenticationAdapter
      * @return void
      */
     abstract public function init();
-
-    /**
-     * Sets the servlet instance.
-     *
-     * @param \TechDivision\Servlet\Servlet $servlet A servlet instance
-     *
-     * @return void
-     */
-    protected function setServlet(Servlet $servlet)
-    {
-        $this->servlet = $servlet;
-    }
-
-    /**
-     * Returns servlet instance.
-     *
-     * @return \TechDivision\Servlet\Servlet The servlet instance
-     */
-    public function getServlet()
-    {
-        return $this->servlet;
-    }
 
     /**
      * Sets htdigest filename.

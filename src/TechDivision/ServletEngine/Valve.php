@@ -1,7 +1,7 @@
 <?php
 
 /**
- * TechDivision\ServletEngine\ServletNotFoundException
+ * TechDivision\ServletEngine\Valve
  *
  * NOTICE OF LICENSE
  *
@@ -13,7 +13,7 @@
  *
  * @category  Appserver
  * @package   TechDivision_ServletEngine
- * @author    Markus Stockbauer <ms@techdivision.com>
+ * @author    Tim Wagner <tw@techdivision.com>
  * @copyright 2014 TechDivision GmbH <info@techdivision.com>
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
@@ -21,16 +21,28 @@
 
 namespace TechDivision\ServletEngine;
 
+use \TechDivision\Servlet\Http\HttpServletRequest;
+use \TechDivision\Servlet\Http\HttpServletResponse;
+
 /**
- * Is thrown no servlet can be found for a request.
+ * Interface for the valves that will be executed by the servlet engine to handle 
+ * an incoming Http request.
  *
  * @category  Appserver
  * @package   TechDivision_ServletEngine
- * @author    Markus Stockbauer <ms@techdivision.com>
+ * @author    Tim Wagner <tw@techdivision.com>
  * @copyright 2014 TechDivision GmbH <info@techdivision.com>
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class ServletNotFoundException extends \Exception
+interface Valve
 {
+
+    /**
+     * Processes this valve.
+     *
+     * @param \TechDivision\Servlet\ServletRequest  $servletRequest  The request instance
+     * @param \TechDivision\Servlet\ServletResponse $servletResponse The response instance
+     */
+    public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse);
 }

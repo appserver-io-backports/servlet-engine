@@ -46,11 +46,25 @@ class HttpRequestContext extends BaseContext
     protected $sessionManager;
     
     /**
+     * The authentication manager that is bound to the request.
+     * 
+     * @var \TechDivision\ServletEngine\AuthenticationManager
+     */
+    protected $authenticationManager;
+    
+    /**
      * The server variables.
      * 
      * @var array
      */
     protected $serverVars = array();
+    
+    /**
+     * Array with applications bound to this engine.
+     * 
+     * @var array
+     */
+    protected $applications;
     
     /**
      * Injects the session manager that is bound to the request.
@@ -65,6 +79,18 @@ class HttpRequestContext extends BaseContext
     }
     
     /**
+     * Injects the authentication manager that is bound to the request.
+     * 
+     * @param \TechDivision\ServletEngine\AuthenticationManager $authenticationManager The authentication manager to bound this request to
+     * 
+     * @return void
+     */
+    public function injectAuthenticationManager($authenticationManager)
+    {
+        $this->authenticationManager = $authenticationManager;
+    }
+    
+    /**
      * Injects the server variables.
      * 
      * @param array $serverVars The server variables
@@ -74,6 +100,18 @@ class HttpRequestContext extends BaseContext
     public function injectServerVars(array $serverVars)
     {
         $this->serverVars = $serverVars;
+    }
+
+    /**
+     * Injects the applications bound to this engine
+     * 
+     * @param array $applications The applications bound to the engine
+     * 
+     * @return void
+     */
+    public function injectApplications(array $applications)
+    {
+        $this->applications = $applications;
     }
     
     /**
@@ -87,6 +125,16 @@ class HttpRequestContext extends BaseContext
     }
     
     /**
+     * Returns the authentication manager instance associated with this request.
+     * 
+     * @return \TechDivision\ServletEngine\AuthenticationManager The authentication manager instance
+     */
+    public function getAuthenticationManager()
+    {
+        return $this->authenticationManager;
+    }
+    
+    /**
      * Returns the array with the server variables.
      * 
      * @return array The array with the server variables
@@ -94,6 +142,32 @@ class HttpRequestContext extends BaseContext
     public function getServerVars()
     {
         return $this->serverVars;
+    }
+    
+    /**
+     * Returns the initialized applications bound to the engine.
+     * 
+     * @return array The array with the initialized applications
+     */
+    public function getApplications()
+    {
+        return $this->applications;
+    }
+    
+    /**
+     * Returns the application bound to the acutal request.
+     * 
+     * @param string $contextPath The context path to return the application for
+     * 
+     * @return \TechDivision\ServletEngine\Authentication The application bound to this request
+     */
+    public function findApplicationByContextPath($contextPath)
+    {
+        foreach ($this->getApplications() as $application) {
+            if ($application->getName() === ltrim($contextPath, '/')) {
+                return $application;
+            }
+        }
     }
 
     /**

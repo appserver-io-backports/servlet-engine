@@ -43,33 +43,12 @@ class Request implements HttpServletRequest
 {
 
     /**
-     * Request header data.
-     *
-     * @var array
-     */
-    protected $headers = array();
-
-    /**
      * Array that contain's the cookies passed with.
      * the request.
      *
      * @var array
      */
     protected $cookies = array();
-
-    /**
-     * An array that contains all request parameters.
-     *
-     * @var array
-     */
-    protected $parameterMap = array();
-    
-    /**
-     * The array with the server variables.
-     * 
-     * @var array
-     */
-    protected $serverVars = array();
     
     /**
      * The ID of requested session.
@@ -84,41 +63,6 @@ class Request implements HttpServletRequest
      * @var string
      */
     protected $pathInfo;
-
-    /**
-     * The request method.
-     *
-     * @var string
-     */
-    protected $method;
-
-    /**
-     * The request body.
-     *
-     * @var string
-     */
-    protected $bodyStream;
-
-    /**
-     * Uri called by client.
-     *
-     * @var string
-     */
-    protected $uri;
-
-    /**
-     * Protocol version.
-     *
-     * @var string
-     */
-    protected $version;
-
-    /**
-     * Query string with params.
-     *
-     * @var string
-     */
-    protected $queryString;
     
     /**
      * The path to the servlet used to handle the request.
@@ -126,13 +70,6 @@ class Request implements HttpServletRequest
      * @var string
      */
     protected $servletPath;
-
-    /**
-     * Hold's the document root directory
-     *
-     * @var string
-     */
-    protected $documentRoot;
     
     /**
      * The context that allows access to session and server information.
@@ -140,6 +77,13 @@ class Request implements HttpServletRequest
      * @var \TechDivision\Context\Context
      */
     protected $context;
+    
+    /**
+     * The Http request instance.
+     * 
+     * @var \TechDivision\Http\HttpRequestInteface
+     */
+    protected $httpRequest;
     
     /**
      * The servlet session related with the requested session ID.
@@ -156,6 +100,13 @@ class Request implements HttpServletRequest
     protected $response;
     
     /**
+     * Flag that the request has been dispatched.
+     * 
+     * @var boolean
+     */
+    protected $dispatched = false;
+    
+    /**
      * Injects the context that allows access to session and
      * server information.
      * 
@@ -166,6 +117,28 @@ class Request implements HttpServletRequest
     public function injectContext(Context $context)
     {
         $this->context = $context;
+    }
+    
+    /**
+     * Injects the Http request instance.
+     * 
+     * @param \TechDivision\Http\HttpRequestInterface $httpRequest The Http request instance
+     * 
+     * @return void
+     */
+    public function injectHttpRequest(HttpRequestInterface $httpRequest)
+    {
+        $this->httpRequest = $httpRequest;
+    }
+    
+    /**
+     * Returns the Http request instance.
+     * 
+     * @return \TechDivision\Http\HttpRequestInterface The Http request instance
+     */
+    public function getHttpRequest()
+    {
+        return $this->httpRequest;
     }
     
     /**
@@ -210,7 +183,7 @@ class Request implements HttpServletRequest
      */
     public function setParameterMap(array $parameterMap)
     {
-        $this->parameterMap = $parameterMap;
+        $this->getHttpRequest()->setParams($parameterMap);
     }
 
     /**
@@ -220,7 +193,7 @@ class Request implements HttpServletRequest
      */
     public function getParameterMap()
     {
-        return $this->parameterMap;
+        return $this->getHttpRequest()->getParams();
     }
 
     /**
@@ -230,7 +203,7 @@ class Request implements HttpServletRequest
      */
     public function getBodyStream()
     {
-        return $this->bodyStream;
+        return $this->getHttpRequest()->getBodyStream();
     }
 
     /**
@@ -242,7 +215,7 @@ class Request implements HttpServletRequest
      */
     public function setVersion($version)
     {
-        $this->version = $version;
+        $this->getHttpRequest()->setVersion($version);
     }
 
     /**
@@ -252,7 +225,7 @@ class Request implements HttpServletRequest
      */
     public function getVersion()
     {
-        return $this->version;
+        return $this->getHttpRequest()->getVersion();
     }
 
     /**
@@ -415,7 +388,7 @@ class Request implements HttpServletRequest
      */
     public function setQueryString($queryString)
     {
-        $this->queryString = $queryString;
+        $this->getHttpRequest()->setQueryString($queryString);
     }
 
     /**
@@ -425,41 +398,7 @@ class Request implements HttpServletRequest
      */
     public function getQueryString()
     {
-        return $this->queryString;
-    }
-
-    /**
-     * Returns header info by given key
-     *
-     * @param string $key The header key to get
-     *
-     * @return string|null
-     */
-    public function getHeader($key)
-    {
-        return $this->headers[$key];
-    }
-
-    /**
-     * Set headers data
-     *
-     * @param array $headers The headers array to set
-     *
-     * @return void
-     */
-    public function setHeaders($headers)
-    {
-        $this->headers = $headers;
-    }
-
-    /**
-     * Returns headers data
-     *
-     * @return array
-     */
-    public function getHeaders()
-    {
-        return $this->headers;
+        return $this->getHttpRequest()->getQueryString();
     }
 
     /**
@@ -471,7 +410,7 @@ class Request implements HttpServletRequest
      */
     public function setMethod($method)
     {
-        $this->method = $method;
+        $this->getHttpRequest()->setMethod($method);
     }
 
     /**
@@ -481,7 +420,7 @@ class Request implements HttpServletRequest
      */
     public function getMethod()
     {
-        return $this->method;
+        return $this->getHttpRequest()->getMethod();
     }
 
     /**
@@ -493,7 +432,7 @@ class Request implements HttpServletRequest
      */
     public function setUri($uri)
     {
-        $this->uri = $uri;
+        $this->getHttpRequest()->setUri($uri);
     }
 
     /**
@@ -503,7 +442,7 @@ class Request implements HttpServletRequest
      */
     public function getUri()
     {
-        return $this->uri;
+        return $this->getHttpRequest()->getUri();
     }
     
     /**
@@ -546,6 +485,40 @@ class Request implements HttpServletRequest
     }
 
     /**
+     * Returns header info by given name
+     *
+     * @param string $name The header key to name
+     *
+     * @return string|null
+     */
+    public function getHeader($name)
+    {
+        return $this->getHttpRequest()->getHeader($name);
+    }
+
+    /**
+     * Set headers data
+     *
+     * @param array $headers The headers array to set
+     *
+     * @return void
+     */
+    public function setHeaders($headers)
+    {
+        $this->getHttpRequest()->setHeaders($headers);
+    }
+
+    /**
+     * Returns headers data
+     *
+     * @return array
+     */
+    public function getHeaders()
+    {
+        return $this->getHttpRequest()->getHeaders();
+    }
+
+    /**
      * Adds a header information got from connection.
      *
      * @param string $name  The header name
@@ -555,7 +528,7 @@ class Request implements HttpServletRequest
      */
     public function addHeader($name, $value)
     {
-        $this->headers[$name] = $value;
+        $this->getHttpRequest()->addHeader($name, $value);
     }
     
     /**
@@ -567,29 +540,7 @@ class Request implements HttpServletRequest
     */
     public function hasHeader($name)
     {
-        return isset($this->headers[$name]);
-    }
-
-    /**
-     * Sets document root
-     *
-     * @param string $documentRoot The document root
-     *
-     * @return void
-     */
-    public function setDocumentRoot($documentRoot)
-    {
-        $this->documentRoot = $documentRoot;
-    }
-
-    /**
-     * Returns the document root
-     *
-     * @return string
-     */
-    public function getDocumentRoot()
-    {
-        return $this->documentRoot;
+        return $this->getHttpRequest()->hasHeader($name);
     }
     
     /**
@@ -613,6 +564,28 @@ class Request implements HttpServletRequest
     public function getRequestedSessionId()
     {
         return $this->requestedSessionId;
+    }
+    
+    /**
+     * Sets the flag to mark the request dispatched.
+     * 
+     * @param boolean $dispatched TRUE if the request has already been dispatched, else FALSE
+     * 
+     * @return void
+     */
+    public function setDispatched($dispatched = true)
+    {
+        $this->dispatched = $dispatched;
+    }
+    
+    /**
+     * Sets the flag that shows if the request has already been dispatched.
+     * 
+     * @return boolean TRUE if the request has already been dispatched, else FALSE
+     */
+    public function isDispatched()
+    {
+        return $this->dispatched;
     }
 
     /**

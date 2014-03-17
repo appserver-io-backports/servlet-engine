@@ -124,7 +124,12 @@ class ServletManager implements ServletContext
             
             // intialize the security configuration by parseing the security nodes
             foreach ($config->xpath('/web-app/security') as $securityParam) {
-                $this->securedUrlConfigs[] = json_decode(json_encode($securityParam), 1);
+                // prepare the URL config in JSON format
+                $securedUrlConfig = json_decode(json_encode($securityParam), 1);
+                // add the web app path to the security config (to resolve relative filenames)
+                $securedUrlConfig['webapp-path'] = $this->getWebappPath();
+                // add the configuration to the array
+                $this->securedUrlConfigs[] = $securedUrlConfig;
             }
             
             // initialize the context by parsing the context-param nodes

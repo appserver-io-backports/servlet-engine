@@ -48,40 +48,16 @@ class HtpasswdAdapter extends AuthenticationAdapter
     protected $htpasswd;
 
     /**
-     * The filename of the htpasswd file.
-     * 
-     * @var string
-     */
-    protected $filename;
-
-    /**
-     * Construct to initialize the adapter.
-     *
-     * @param array                         $options The options
-     * @param \TechDivision\Servlet\Servlet $servlet A servlet instance
-     * 
-     * @return void
-     */
-    public function __construct($options, Servlet $servlet)
-    {
-        parent::__construct($options, $servlet);
-        $this->filename = $options['file'];
-        $this->init();
-    }
-
-    /**
      * Initializes the adapter.
      *
      * @return void
      */
     public function init()
     {
-        // get current web app path.
-        $webAppPath = $this->servlet->getServletContext()->getWebappPath();
 
         // get content of htpasswd file.
-        $htpasswdData = file($webAppPath . DIRECTORY_SEPARATOR . 'WEB-INF' . DIRECTORY_SEPARATOR . $this->filename);
-
+        $htpasswdData = file($this->getFilename());
+        
         // prepare htpasswd entries
         $this->htpasswd = array();
         foreach ($htpasswdData as $entry) {

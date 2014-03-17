@@ -45,13 +45,12 @@ class DigestAuthentication extends AbstractAuthentication
      */
     public function authenticate()
     {
-        $config = $this->getServlet()->getSecuredUrlConfig();
+        $config = $this->getSecuredUrlConfig();
         $req = $this->getServletRequest();
         $res = $this->getServletResponse();
 
-        $realm = $config['realm'];
-        $adapterType = $config['adapter_type'];
-        $options = $config['options'];
+        $realm = $config['auth']['realm'];
+        $adapterType = $config['auth']['adapter_type'];
 
         // if client provided authentication data
         if ($authorizationData = $req->getHeader(HttpProtocol::HEADER_AUTHORIZATION)) {
@@ -71,7 +70,7 @@ class DigestAuthentication extends AbstractAuthentication
                 $authAdapterClass = 'TechDivision\ServletEngine\Authentication\Adapters\\' . ucfirst($adapterType) . 'Adapter';
                 
                 // instantiate configured authentication adapter
-                $authAdapter = new $authAdapterClass($options, $this->getServlet());
+                $authAdapter = new $authAdapterClass($config);
 
                 // delegate authentication to adapter
                 if ($authAdapter->authenticate($data, $req->getMethod())) {

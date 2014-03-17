@@ -43,6 +43,8 @@ interface Valve
      *
      * @param \TechDivision\Servlet\ServletRequest  $servletRequest  The request instance
      * @param \TechDivision\Servlet\ServletResponse $servletResponse The response instance
+     * 
+     * @return void
      */
     public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse);
 }

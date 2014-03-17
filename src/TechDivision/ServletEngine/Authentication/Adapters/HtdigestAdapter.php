@@ -53,7 +53,7 @@ class HtdigestAdapter extends AuthenticationAdapter
      * @return void
      */
     public function init()
-    {   
+    {
         
         // get content of htdigest file.
         $htDigestData = file($this->getFilename());

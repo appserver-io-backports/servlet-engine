@@ -39,7 +39,7 @@ class ServletValve
 {
     
     /**
-     * Processes this valve.
+     * Load the actual context instance, the servlet and handle the request.
      *
      * @param \TechDivision\Servlet\ServletRequest  $servletRequest  The request instance
      * @param \TechDivision\Servlet\ServletResponse $servletResponse The response instance
@@ -48,14 +48,6 @@ class ServletValve
      */
     public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
     {
-        
-        // load the actual application instance
-        $application = $servletRequest->getContext()->findApplicationByContextPath($servletRequest->getContextPath());
-        
-        // locate the servlet to handle that request
-        $servlet = $application->locate($servletRequest);
-        
-        // let the servlet handle the request
-        $servlet->service($servletRequest, $servletResponse);
+        $servletRequest->getContext()->locate($servletRequest)->service($servletRequest, $servletResponse);
     }
 }

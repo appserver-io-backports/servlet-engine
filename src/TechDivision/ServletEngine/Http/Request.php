@@ -276,7 +276,7 @@ class Request implements HttpServletRequest
      */
     public function getPart($name)
     {
-        throw new \Exception('Method ' . __METHOD__ . ' not implemented yet');
+        return $this->getHttpRequest()->getPart($name);
     }
 
     /**
@@ -286,7 +286,7 @@ class Request implements HttpServletRequest
      */
     public function getParts()
     {
-        throw new \Exception('Method ' . __METHOD__ . ' not implemented yet');
+        return $this->getHttpRequest()->getParts();
     }
     
     /**

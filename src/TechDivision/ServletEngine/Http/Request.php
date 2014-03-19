@@ -27,6 +27,8 @@ use TechDivision\Http\HttpRequestInterface;
 use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Servlet\Http\HttpServletResponse;
+use TechDivision\WebServer\Dictionaries\ServerVars;
+use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
 
 /**
  * A Http servlet request implementation.
@@ -74,7 +76,7 @@ class Request implements HttpServletRequest
     /**
      * The context that allows access to session and server information.
      * 
-     * @var \TechDivision\Context\Context
+     * @var \TechDivision\ServletEngine\Http\RequestContext
      */
     protected $context;
     
@@ -100,6 +102,13 @@ class Request implements HttpServletRequest
     protected $response;
     
     /**
+     * The server variables.
+     * 
+     * @var array
+     */
+    protected $serverVars = array();
+    
+    /**
      * Flag that the request has been dispatched.
      * 
      * @var boolean
@@ -110,13 +119,25 @@ class Request implements HttpServletRequest
      * Injects the context that allows access to session and
      * server information.
      * 
-     * @param \TechDivision\Context\Context $context The request context instance
+     * @param \TechDivision\ServletEngine\Http\RequestContext $context The request context instance
      * 
      * @return void
      */
     public function injectContext(Context $context)
     {
         $this->context = $context;
+    }
+    
+    /**
+     * Injects the server variables.
+     * 
+     * @param array $serverVars The server variables
+     * 
+     * @return void
+     */
+    public function injectServerVars(array $serverVars)
+    {
+        $this->serverVars = $serverVars;
     }
     
     /**
@@ -145,7 +166,7 @@ class Request implements HttpServletRequest
      * Returns the context that allows access to session and
      * server information.
      * 
-     * @return \TechDivision\Context\Context The request context
+     * @return \TechDivision\ServletEngine\Http\RequestContext The request context
      */
     public function getContext()
     {
@@ -380,72 +401,6 @@ class Request implements HttpServletRequest
     }
     
     /**
-     * Sets the query string of the actual request.
-     * 
-     * @param string $queryString The query string of the actual request
-     * 
-     * @return void
-     */
-    public function setQueryString($queryString)
-    {
-        $this->getHttpRequest()->setQueryString($queryString);
-    }
-
-    /**
-     * Returns query string of the actual request.
-     *
-     * @return string|null The query string of the actual request
-     */
-    public function getQueryString()
-    {
-        return $this->getHttpRequest()->getQueryString();
-    }
-
-    /**
-     * Set request method
-     *
-     * @param string $method Request-Method
-     *
-     * @return void
-     */
-    public function setMethod($method)
-    {
-        $this->getHttpRequest()->setMethod($method);
-    }
-
-    /**
-     * Returns request method
-     *
-     * @return string
-     */
-    public function getMethod()
-    {
-        return $this->getHttpRequest()->getMethod();
-    }
-
-    /**
-     * Set request uri
-     *
-     * @param string $uri The uri to set
-     *
-     * @return void
-     */
-    public function setUri($uri)
-    {
-        $this->getHttpRequest()->setUri($uri);
-    }
-
-    /**
-     * Returns request uri
-     *
-     * @return string
-     */
-    public function getUri()
-    {
-        return $this->getHttpRequest()->getUri();
-    }
-    
-    /**
      * Adds the passed cookie to this request.
      * 
      * @param \TechDivision\Servlet\Http\Cookie $cookie The cookie to add
@@ -595,17 +550,46 @@ class Request implements HttpServletRequest
      */
     public function getServerName()
     {
-        return $this->getContext()->getServerVar('SERVER_NAME');
+        return $this->getServerVar(ServerVars::SERVER_NAME);
     }
 
     /**
-     * Returns the server variables
+     * Returns query string of the actual request.
      *
-     * @return array The server variables
+     * @return string|null The query string of the actual request
+     */
+    public function getQueryString()
+    {
+        return $this->getServerVar(ServerVars::QUERY_STRING);
+    }
+
+    /**
+     * Returns request uri
+     *
+     * @return string
+     */
+    public function getUri()
+    {
+        return $this->getServerVar(ServerVars::REQUEST_URI);
+    }
+    /**
+     * Returns request method
+     *
+     * @return string
+     */
+    public function getMethod()
+    {
+        return $this->getServerVar(ServerVars::REQUEST_METHOD);
+    }
+    
+    /**
+     * Returns the array with the server variables.
+     * 
+     * @return array The array with the server variables
      */
     public function getServerVars()
     {
-        return $this->getContext()->getServerVars();
+        return $this->serverVars;
     }
 
     /**
@@ -617,6 +601,8 @@ class Request implements HttpServletRequest
      */
     public function getServerVar($name)
     {
-        return $this->getContext()->getServerVar($name);
+        if (array_key_exists($name, $serverVars = $this->getServerVars())) {
+            return $serverVars[$name];
+        }
     }
 }

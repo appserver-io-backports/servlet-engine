@@ -50,11 +50,11 @@ class StandardAuthenticationManager implements AuthenticationManager
     public function handleRequest(ServletRequest $servletRequest, ServletResponse $servletResponse)
     {
         
-        // load the actual application instance
-        $application = $servletRequest->getContext()->findApplicationByContextPath($servletRequest->getContextPath());
+        // load the actual context instance
+        $context = $servletRequest->getContext();
         
         // iterate over all servlets and return the matching one
-        foreach ($application->getServletContext()->getSecuredUrlConfigs() as $securedUrlConfig) {
+        foreach ($context->getServletContext()->getSecuredUrlConfigs() as $securedUrlConfig) {
         
             // extract URL pattern and authentication configuration
             list ($urlPattern, $auth) = array_values($securedUrlConfig);

@@ -51,36 +51,4 @@ interface RequestContext extends Context
      * @return \TechDivision\ServletEngine\AuthenticationManager The authentication manager instance
      */
     public function getAuthenticationManager();
-    
-    /**
-     * Returns the initialized applications bound to the engine.
-     * 
-     * @return array The array with the initialized applications
-     */
-    public function getApplications();
-    
-    /**
-     * Returns the application bound to the acutal request.
-     * 
-     * @param string $contextPath The context path to return the application for
-     * 
-     * @return \TechDivision\ServletEngine\Authentication The application bound to this request
-     */
-    public function findApplicationByContextPath($contextPath);
-    
-    /**
-     * Returns the array with the server variables.
-     * 
-     * @return array The array with the server variables
-     */
-    public function getServerVars();
-
-    /**
-     * Returns the server variable with the requested name.
-     *
-     * @param string $name The name of the server variable to be returned
-     *
-     * @return mixed The requested server variable
-     */
-    public function getServerVar($name);
 }

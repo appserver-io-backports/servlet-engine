@@ -64,6 +64,23 @@ class Response implements HttpServletResponse
     public function injectHttpResponse(HttpResponseInterface $httpResponse)
     {
         $this->httpResponse = $httpResponse;
+        $this->initDefaultHeaders();
+    }
+    
+    /**
+     * Initializes the response with the default headers.
+     * 
+     * @return void
+     */
+    protected function initDefaultHeaders()
+    {
+        // add this header to prevent .php request to be cached
+        $this->addHeader(HttpProtocol::HEADER_EXPIRES, '19 Nov 1981 08:52:00 GMT');
+        $this->addHeader(HttpProtocol::HEADER_CACHE_CONTROL, 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
+        $this->addHeader(HttpProtocol::HEADER_PRAGMA, 'no-cache');
+        
+        // set per default text/html mimetype
+        $this->addHeader(HttpProtocol::HEADER_CONTENT_TYPE, 'text/html');
     }
     
     /**
@@ -204,7 +221,7 @@ class Response implements HttpServletResponse
      */
     public function removeHeader($name)
     {
-        throw new \Exception(__METHOD__ . ' not implemented yet');
+        $this->getHttpResponse()->removeHeader($name);
     }
 
     /**

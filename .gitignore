@@ -2,5 +2,7 @@
 /.settings
 /.buildpath
 /target
-build.properties
 /.idea
+/.sonar
+sonar-project.properties
+build.properties

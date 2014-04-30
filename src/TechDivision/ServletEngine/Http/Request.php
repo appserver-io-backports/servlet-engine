@@ -220,7 +220,17 @@ class Request implements HttpServletRequest
     /**
      * Return content
      *
-     * @return string $content
+     * @return string $content  
+     */
+    public function getBodyContent()
+    {
+        return $this->getHttpRequest()->getBodyContent();
+    }
+
+    /**
+     * Return request content
+     *
+     * @return resource The request content
      */
     public function getBodyStream()
     {

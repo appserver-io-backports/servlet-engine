@@ -134,6 +134,16 @@ class Response implements HttpServletResponse
     }
 
     /**
+     * Return content
+     *
+     * @return string $content  
+     */
+    public function getBodyContent()
+    {
+        return $this->getHttpResponse()->getBodyContent();
+    }
+
+    /**
      * Returns the body stream as a resource.
      *
      * @return resource The body stream

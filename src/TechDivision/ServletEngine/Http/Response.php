@@ -146,6 +146,7 @@ class Response implements HttpServletResponse
     /**
      * Cleans the body stream
      *
+     * @return void
      */
     public function unlinkBodyStream()
     {

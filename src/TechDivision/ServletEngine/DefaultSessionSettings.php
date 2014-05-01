@@ -111,6 +111,17 @@ class DefaultSessionSettings implements SessionSettings
     {
         $this->sessionCookieLifetime = time() + 86400;
     }
+
+    /**
+     * Get the session name
+     *
+     * @param $sessionName
+     * @return void
+     */
+    public function setSessionName($sessionName)
+    {
+        $this->sessionName = $sessionName;
+    }
     
     /**
      * Returns the session name to use.

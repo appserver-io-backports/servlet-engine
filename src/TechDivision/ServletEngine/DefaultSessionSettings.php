@@ -113,7 +113,7 @@ class DefaultSessionSettings implements SessionSettings
     }
 
     /**
-     * Get the session name
+     * Set the session name
      *
      * @param $sessionName
      * @return void

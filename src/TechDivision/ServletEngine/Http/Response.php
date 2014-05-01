@@ -144,6 +144,15 @@ class Response implements HttpServletResponse
     }
 
     /**
+     * Cleans the body stream
+     *
+     */
+    public function unlinkBodyStream()
+    {
+        return $this->getHttpResponse()->unlinkBodyStream();
+    }
+
+    /**
      * Returns the body stream as a resource.
      *
      * @return resource The body stream

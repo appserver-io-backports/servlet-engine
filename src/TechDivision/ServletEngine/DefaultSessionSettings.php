@@ -34,78 +34,77 @@ class DefaultSessionSettings implements SessionSettings
 
     /**
      * The default servlet session name.
-     * 
+     *
      * @var string
      */
     const DEFAULT_SESSION_NAME = 'SESSID';
     
     /**
      * The default session cookie path.
-     * 
+     *
      * @var string
      */
     const DEFAULT_SESSION_COOKIE_PATH = '/';
     
     /**
      * The session name to use.
-     * 
+     *
      * @var string
      */
     protected $sessionName = DefaultSessionSettings::DEFAULT_SESSION_NAME;
     
     /**
      * The session cookie lifetime.
-     * 
+     *
      * @var integer
      */
     protected $sessionCookieLifetime = 0;
     
     /**
      * The cookie domain set for the session.
-     * 
+     *
      * @var string
      */
     protected $sessionCookieDomain = Cookie::LOCALHOST;
     
     /**
      * The cookie path set for the session.
-     * 
+     *
      * @var string
      */
     protected $sessionCookiePath = DefaultSessionSettings::DEFAULT_SESSION_COOKIE_PATH;
     
     /**
      * The flag that the session cookie should only be set in a secure connection.
-     * 
+     *
      * @var boolean
      */
     protected $sessionCookieSecure = false;
     
     /**
      * The flag if the session should set a Http only cookie.
-     * 
+     *
      * @var boolean
      */
     protected $sessionCookieHttpOnly = false;
     
     /**
      * The probability the garbage collector will be invoked on the session.
-     * 
+     *
      * @var float
      */
     protected $garbageCollectionProbability = 1.0;
     
     /**
      * The inactivity timeout until the session will be invalidated.
-     * 
+     *
      * @var integer
      */
     protected $inactivityTimeout = 1440;
     
     /**
      * Initialize the default session settings.
-     * 
-     * @return void
+     *
      */
     public function __construct()
     {
@@ -115,7 +114,7 @@ class DefaultSessionSettings implements SessionSettings
     /**
      * Set the session name
      *
-     * @param $sessionName
+     * @param string $sessionName The session name
      * @return void
      */
     public function setSessionName($sessionName)
@@ -125,7 +124,7 @@ class DefaultSessionSettings implements SessionSettings
     
     /**
      * Returns the session name to use.
-     * 
+     *
      * @return string The session name
      */
     public function getSessionName()
@@ -135,7 +134,7 @@ class DefaultSessionSettings implements SessionSettings
     
     /**
      * Returns the session cookie lifetime.
-     * 
+     *
      * @return integer The session cookie lifetime
      */
     public function getSessionCookieLifetime()
@@ -145,7 +144,7 @@ class DefaultSessionSettings implements SessionSettings
     
     /**
      * Returns the cookie domain set for the session.
-     * 
+     *
      * @return string The cookie domain set for the session
      */
     public function getSessionCookieDomain()
@@ -155,7 +154,7 @@ class DefaultSessionSettings implements SessionSettings
     
     /**
      * Returns the cookie path set for the session.
-     * 
+     *
      * @return string The cookie path set for the session
      */
     public function getSessionCookiePath()
@@ -165,7 +164,7 @@ class DefaultSessionSettings implements SessionSettings
     
     /**
      * Returns the flag that the session cookie should only be set in a secure connection.
-     * 
+     *
      * @return boolean TRUE if a secure cookie should be set, else FALSE
      */
     public function getSessionCookieSecure()
@@ -175,7 +174,7 @@ class DefaultSessionSettings implements SessionSettings
     
     /**
      * Returns the flag if the session should set a Http only cookie.
-     * 
+     *
      * @return boolean TRUE if a Http only cookie should be used
      */
     public function getSessionCookieHttpOnly()
@@ -185,7 +184,7 @@ class DefaultSessionSettings implements SessionSettings
     
     /**
      * Returns the probability the garbage collector will be invoked on the session.
-     * 
+     *
      * @return float The garbage collector probability
      */
     public function getGarbageCollectionProbability()
@@ -195,7 +194,7 @@ class DefaultSessionSettings implements SessionSettings
     
     /**
      * Returns the inactivity timeout until the session will be invalidated.
-     * 
+     *
      * @return integer The inactivity timeout in seconds
      */
     public function getInactivityTimeout()

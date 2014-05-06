@@ -40,21 +40,21 @@ abstract class AuthenticationAdapter
     
     /**
      * Necessary options for specific adapter.
-     * 
+     *
      * @var array
      */
     protected $options;
     
     /**
      * The path to the actual web application (to resolve relative URLs).
-     * 
+     *
      * @var string
      */
     protected $webappPath;
 
     /**
      * The filename of the htdigest file.
-     * 
+     *
      * @var string
      */
     protected $filename;

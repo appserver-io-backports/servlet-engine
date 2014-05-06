@@ -115,6 +115,7 @@ class DefaultSessionSettings implements SessionSettings
      * Set the session name
      *
      * @param string $sessionName The session name
+     *
      * @return void
      */
     public function setSessionName($sessionName)

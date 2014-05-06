@@ -24,7 +24,7 @@ namespace TechDivision\ServletEngine;
 use TechDivision\Servlet\IllegalStateException;
 
 /**
- * This exception is thrown if the session will be used and has not been started yet. 
+ * This exception is thrown if the session will be used and has not been started yet.
  *
  * @category  Appserver
  * @package   TechDivision_ServletEngine

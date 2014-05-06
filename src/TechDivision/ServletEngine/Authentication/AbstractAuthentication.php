@@ -42,14 +42,14 @@ abstract class AbstractAuthentication
 
     /**
      * Basic HTTP authentication method.
-     * 
+     *
      * @var string
      */
     const AUTHENTICATION_METHOD_BASIC = 'Basic';
 
     /**
      * Digest HTTP authentication method.
-     * 
+     *
      * @var string
      */
     const AUTHENTICATION_METHOD_DIGEST = 'Digest';
@@ -70,14 +70,14 @@ abstract class AbstractAuthentication
     
     /**
      * The configuration with the secured URLs.
-     * 
+     *
      * @var array
      */
     protected $securedUrlConfig = array();
     
     /**
      * The configuration with the secured URLs.
-     * 
+     *
      * @param array $securedUrlConfig The secured URL configuration
      */
     public function __construct($securedUrlConfig)
@@ -87,7 +87,7 @@ abstract class AbstractAuthentication
 
     /**
      * An alternative constructor that has to be called manually.
-     * 
+     *
      * @param \TechDivision\Servlet\ServletRequest  $servletRequest  The request instance
      * @param \TechDivision\Servlet\ServletResponse $servletResponse The response instance
      *
@@ -135,7 +135,7 @@ abstract class AbstractAuthentication
 
     /**
      * Returns servlet response instance.
-     * 
+     *
      * @return \TechDivision\Servlet\ServletResponse The servlet response instance
      */
     protected function getServletResponse()
@@ -145,8 +145,8 @@ abstract class AbstractAuthentication
     
     /**
      * The configuration with the secured URLs.
-     * 
-     * @return array The secured URL configuration 
+     *
+     * @return array The secured URL configuration
      */
     protected function getSecuredUrlConfig()
     {

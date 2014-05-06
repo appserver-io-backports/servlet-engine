@@ -49,16 +49,16 @@ class Response implements HttpServletResponse
     
     /**
      * The Http response instance.
-     * 
+     *
      * @var \TechDivision\Http\HttpResponseInteface
      */
     protected $httpResponse;
     
     /**
      * Injects the Http response instance.
-     * 
+     *
      * @param \TechDivision\Http\HttpResponseInterface $httpResponse The Http response instance
-     * 
+     *
      * @return void
      */
     public function injectHttpResponse(HttpResponseInterface $httpResponse)
@@ -69,7 +69,7 @@ class Response implements HttpServletResponse
     
     /**
      * Initializes the response with the default headers.
-     * 
+     *
      * @return void
      */
     protected function initDefaultHeaders()
@@ -85,7 +85,7 @@ class Response implements HttpServletResponse
     
     /**
      * Returns the Http response instance.
-     * 
+     *
      * @return \TechDivision\Http\HttpResponseInterface The Http response instance
      */
     public function getHttpResponse()
@@ -131,6 +131,26 @@ class Response implements HttpServletResponse
     public function getCookies()
     {
         return $this->cookies;
+    }
+
+    /**
+     * Return content
+     *
+     * @return string $content  
+     */
+    public function getBodyContent()
+    {
+        return $this->getHttpResponse()->getBodyContent();
+    }
+
+    /**
+     * Reset the body stream
+     *
+     * @return void
+     */
+    public function resetBodyStream()
+    {
+        return $this->getHttpResponse()->resetBodyStream();
     }
 
     /**

@@ -42,7 +42,7 @@ class HtdigestAdapter extends AuthenticationAdapter
 {
     /**
      * The content of the htdigest file.
-     * 
+     *
      * @var array
      */
     protected $htdigest = array();

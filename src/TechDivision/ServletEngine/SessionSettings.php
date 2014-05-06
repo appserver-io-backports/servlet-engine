@@ -31,56 +31,56 @@ interface SessionSettings
     
     /**
      * Returns the session name.
-     * 
+     *
      * @return string The session name
      */
     public function getSessionName();
     
     /**
      * Returns the session cookie lifetime.
-     * 
+     *
      * @return integer The session cookie lifetime
      */
     public function getSessionCookieLifetime();
     
     /**
      * Returns the cookie domain set for the session.
-     * 
+     *
      * @return string The cookie domain set for the session
      */
     public function getSessionCookieDomain();
     
     /**
      * Returns the cookie path set for the session.
-     * 
+     *
      * @return string The cookie path set for the session
      */
     public function getSessionCookiePath();
     
     /**
      * Returns the flag that the session cookie should only be set in a secure connection.
-     * 
+     *
      * @return boolean TRUE if a secure cookie should be set, else FALSE
      */
     public function getSessionCookieSecure();
     
     /**
      * Returns the flag if the session should set a Http only cookie.
-     * 
+     *
      * @return boolean TRUE if a Http only cookie should be used
      */
     public function getSessionCookieHttpOnly();
     
     /**
      * Returns the probability the garbage collector will be invoked on the session.
-     * 
+     *
      * @return float The garbage collector probability
      */
     public function getGarbageCollectionProbability();
     
     /**
      * Returns the inactivity timeout until the session will be invalidated.
-     * 
+     *
      * @return integer The inactivity timeout in seconds
      */
     public function getInactivityTimeout();

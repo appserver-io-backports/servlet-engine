@@ -40,14 +40,14 @@ interface RequestContext extends Context
     
     /**
      * Returns the session manager instance associated with this request.
-     * 
+     *
      * @return \TechDivision\ServletEngine\SessionManager The session manager instance
      */
     public function getSessionManager();
     
     /**
      * Returns the authentication manager instance associated with this request.
-     * 
+     *
      * @return \TechDivision\ServletEngine\AuthenticationManager The authentication manager instance
      */
     public function getAuthenticationManager();

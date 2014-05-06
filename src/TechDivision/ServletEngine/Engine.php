@@ -36,14 +36,14 @@ class Engine
     
     /**
      * Object storage with valves (modules) that'll handle the request.
-     * 
+     *
      * @var \SplObjectStorage
      */
     protected $valves;
 
     /**
      * Initializes the engine.
-     * 
+     *
      * @return void
      */
     public function init()
@@ -70,9 +70,9 @@ class Engine
     
     /**
      * Injects the object storage with valves (modules) that'll handle the request.
-     * 
+     *
      * @param \SplObjectStorage $valves The valves (modules) that handles the request
-     * 
+     *
      * @return void
      */
     public function injectValves(\SplObjectStorage $valves)
@@ -82,7 +82,7 @@ class Engine
     
     /**
      * The valves (modules) that handles the request.
-     * 
+     *
      * @return \SplObjectStorage The valves (modules) that handles the request
      */
     protected function getValves()

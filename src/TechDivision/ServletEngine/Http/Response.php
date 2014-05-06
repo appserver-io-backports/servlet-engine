@@ -150,7 +150,7 @@ class Response implements HttpServletResponse
      */
     public function resetBodyStream()
     {
-        return $this->getHttpResponse()->unlinkBodyStream();
+        return $this->getHttpResponse()->resetBodyStream();
     }
 
     /**

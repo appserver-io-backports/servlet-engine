@@ -144,11 +144,11 @@ class Response implements HttpServletResponse
     }
 
     /**
-     * Cleans the body stream
+     * Reset the body stream
      *
      * @return void
      */
-    public function unlinkBodyStream()
+    public function resetBodyStream()
     {
         return $this->getHttpResponse()->unlinkBodyStream();
     }

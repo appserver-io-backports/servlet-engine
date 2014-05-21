@@ -43,91 +43,54 @@ class Response implements HttpServletResponse
 
     /**
      *
-     * @var string
-     */
-    protected $bodyStream = '';
-
-    /**
-     *
-     * @var array
-     */
-    protected $headers = array();
-
-    /**
-     *
      * @var array
      */
     protected $cookies = array();
-
+    
     /**
+     * The Http response instance.
      *
-     * @var array
+     * @var \TechDivision\Http\HttpResponseInteface
      */
-    protected $acceptedEncodings = array();
-
+    protected $httpResponse;
+    
     /**
-     * Defines the response status code
+     * Injects the Http response instance.
      *
-     * @var int
-     */
-    protected $statusCode;
-
-    /**
-     * Defines the response reason phrase
-     *
-     * @var string
-     */
-    protected $statusReasonPhrase;
-
-    /**
-     * Defines the response mime type
-     *
-     * @var string
-     */
-    protected $mimeType = "text/plain";
-
-    /**
-     * Set's accepted encodings data
-     *
-     * @param array $acceptedEncodings The accepted codings as array
+     * @param \TechDivision\Http\HttpResponseInterface $httpResponse The Http response instance
      *
      * @return void
      */
-    public function setAcceptedEncodings($acceptedEncodings)
+    public function injectHttpResponse(HttpResponseInterface $httpResponse)
     {
-        $this->acceptedEncodings = $acceptedEncodings;
+        $this->httpResponse = $httpResponse;
+        $this->initDefaultHeaders();
     }
-
+    
     /**
-     * Return's accepted encodings data
-     *
-     * @return array
-     */
-    public function getAcceptedEncodings()
-    {
-        return $this->acceptedEncodings;
-    }
-
-    /**
-     * Returns the body stream as a resource.
-     *
-     * @return resource The body stream
-     */
-    public function getBodyStream()
-    {
-        return $this->bodyStream;
-    }
-
-    /**
-     * Appends the content.
-     *
-     * @param string $content The content to append
+     * Initializes the response with the default headers.
      *
      * @return void
      */
-    public function appendBodyStream($content)
+    protected function initDefaultHeaders()
     {
-        $this->bodyStream .= $content;
+        // add this header to prevent .php request to be cached
+        $this->addHeader(HttpProtocol::HEADER_EXPIRES, '19 Nov 1981 08:52:00 GMT');
+        $this->addHeader(HttpProtocol::HEADER_CACHE_CONTROL, 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
+        $this->addHeader(HttpProtocol::HEADER_PRAGMA, 'no-cache');
+        
+        // set per default text/html mimetype
+        $this->addHeader(HttpProtocol::HEADER_CONTENT_TYPE, 'text/html');
+    }
+    
+    /**
+     * Returns the Http response instance.
+     *
+     * @return \TechDivision\Http\HttpResponseInterface The Http response instance
+     */
+    public function getHttpResponse()
+    {
+        return $this->httpResponse;
     }
 
     /**
@@ -171,6 +134,48 @@ class Response implements HttpServletResponse
     }
 
     /**
+     * Return content
+     *
+     * @return string $content  
+     */
+    public function getBodyContent()
+    {
+        return $this->getHttpResponse()->getBodyContent();
+    }
+
+    /**
+     * Reset the body stream
+     *
+     * @return void
+     */
+    public function resetBodyStream()
+    {
+        return $this->getHttpResponse()->resetBodyStream();
+    }
+
+    /**
+     * Returns the body stream as a resource.
+     *
+     * @return resource The body stream
+     */
+    public function getBodyStream()
+    {
+        return $this->getHttpResponse()->getBodyStream();
+    }
+
+    /**
+     * Appends the content.
+     *
+     * @param string $content The content to append
+     *
+     * @return void
+     */
+    public function appendBodyStream($content)
+    {
+        $this->getHttpResponse()->appendBodyStream($content);
+    }
+
+    /**
      * Sets the headers.
      *
      * @param array $headers The headers array
@@ -179,7 +184,7 @@ class Response implements HttpServletResponse
      */
     public function setHeaders(array $headers)
     {
-        $this->headers = $headers;
+        $this->getHttpResponse()->setHeaders($headers);
     }
 
     /**
@@ -189,45 +194,32 @@ class Response implements HttpServletResponse
      */
     public function getHeaders()
     {
-        return $this->headers;
+        return $this->getHttpResponse()->getHeaders();
     }
 
     /**
      * Adds a header to array
      *
-     * @param string     $header The header label e.g. Accept or Content-Length
-     * @param string|int $value  The header value
+     * @param string     $name  The header label e.g. Accept or Content-Length
+     * @param string|int $value The header value
      *
      * @return void
      */
-    public function addHeader($header, $value)
+    public function addHeader($name, $value)
     {
-        $this->headers[$header] = $value;
+        $this->getHttpResponse()->addHeader($name, $value);
     }
 
     /**
-     * Returns header info by given key
+     * Returns header info by given name
      *
-     * @param string $key The headers key to return
+     * @param string $name The headers name to return
      *
      * @return string|null
      */
-    public function getHeader($key)
+    public function getHeader($name)
     {
-        if (array_key_exists($key, $this->headers)) {
-            return $this->headers[$key];
-        }
-    }
-
-    /**
-     * Returns http response code number only
-     *
-     * @return string
-     */
-    public function getCode()
-    {
-        list ($version, $code) = explode(" ", $this->getHeader(HttpProtocol::HEADER_STATUS));
-        return $code;
+        return $this->getHttpResponse()->getHeader($name);
     }
 
     /**
@@ -237,44 +229,19 @@ class Response implements HttpServletResponse
      */
     public function getVersion()
     {
-        list ($version, $code) = explode(" ", $this->getHeader(HttpProtocol::HEADER_STATUS));
-        return $version;
+        return $this->getHttpResponse()->getVersion();
     }
 
     /**
      * Removes one single header from the headers array.
      *
-     * @param string $header The header to remove
+     * @param string $name The header to remove
      *
      * @return void
      */
-    public function removeHeader($header)
+    public function removeHeader($name)
     {
-        if (array_key_exists($header)) {
-            unset($this->headers[$header]);
-        }
-    }
-
-    /**
-     * Returns the mime type of response data
-     *
-     * @return string
-     */
-    public function getMimeType()
-    {
-        return $this->mimeType;
-    }
-
-    /**
-     * Sets the specific mime type
-     *
-     * @param string $mimeType The mime type to set
-     *
-     * @return void
-     */
-    public function setMimeType($mimeType)
-    {
-        $this->mimeType = $mimeType;
+        $this->getHttpResponse()->removeHeader($name);
     }
 
     /**
@@ -286,10 +253,7 @@ class Response implements HttpServletResponse
      */
     public function setStatusCode($code)
     {
-        // set status code
-        $this->statusCode = $code;
-        // lookup reason phrase by code and set
-        $this->setStatusReasonPhrase(HttpProtocol::getStatusReasonPhraseByCode($code));
+        $this->getHttpResponse()->setStatusCode($code);
     }
 
     /**
@@ -299,7 +263,7 @@ class Response implements HttpServletResponse
      */
     public function getStatusCode()
     {
-        return $this->statusCode;
+        return $this->getHttpResponse()->getStatusCode();
     }
 
     /**
@@ -311,7 +275,7 @@ class Response implements HttpServletResponse
      */
     public function setStatusReasonPhrase($statusReasonPhrase)
     {
-        $this->statusReasonPhrase = $statusReasonPhrase;
+        $this->getHttpResponse()->setStatusReasonPhrase($statusReasonPhrase);
     }
 
     /**
@@ -321,29 +285,6 @@ class Response implements HttpServletResponse
      */
     public function getStatusReasonPhrase()
     {
-        return $this->statusReasonPhrase;
-    }
-
-    /**
-     * Sets the http response status line
-     *
-     * @param string $statusLine The http response status line
-     *
-     * @return void
-     */
-    public function setStatusLine($statusLine)
-    {
-        $this->statusLine = $statusLine;
-    }
-
-    /**
-     * Returns http response status line
-     *
-     * @link http://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html
-     * @return string
-     */
-    public function getStatusLine()
-    {
-        return $this->statusLine;
+        return $this->$this->getHttpResponse()->getStatusReasonPhrase();
     }
 }

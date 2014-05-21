@@ -40,24 +40,15 @@ interface RequestContext extends Context
     
     /**
      * Returns the session manager instance associated with this request.
-     * 
+     *
      * @return \TechDivision\ServletEngine\SessionManager The session manager instance
      */
     public function getSessionManager();
     
     /**
-     * Returns the array with the server variables.
-     * 
-     * @return array The array with the server variables
-     */
-    public function getServerVars();
-
-    /**
-     * Returns the server variable with the requested name.
+     * Returns the authentication manager instance associated with this request.
      *
-     * @param string $name The name of the server variable to be returned
-     *
-     * @return mixed The requested server variable
+     * @return \TechDivision\ServletEngine\AuthenticationManager The authentication manager instance
      */
-    public function getServerVar($name);
+    public function getAuthenticationManager();
 }

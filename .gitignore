@@ -3,4 +3,7 @@
 /.buildpath
 /.idea
 /target
+/.idea
+/.sonar
+sonar-project.properties
 build.properties

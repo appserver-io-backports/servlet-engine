@@ -42,24 +42,17 @@ abstract class AbstractAuthentication
 
     /**
      * Basic HTTP authentication method.
-     * 
+     *
      * @var string
      */
     const AUTHENTICATION_METHOD_BASIC = 'Basic';
 
     /**
      * Digest HTTP authentication method.
-     * 
+     *
      * @var string
      */
     const AUTHENTICATION_METHOD_DIGEST = 'Digest';
-
-    /**
-     * Holds the servlet instance.
-     *
-     * @var \TechDivision\Servlet\Servlet
-     */
-    protected $servlet;
 
     /**
      * Holds the Http servlet request instance.
@@ -74,43 +67,36 @@ abstract class AbstractAuthentication
      * @var \TechDivision\Servlet\ServletResponse
      */
     protected $servletResponse;
+    
+    /**
+     * The configuration with the secured URLs.
+     *
+     * @var array
+     */
+    protected $securedUrlConfig = array();
+    
+    /**
+     * The configuration with the secured URLs.
+     *
+     * @param array $securedUrlConfig The secured URL configuration
+     */
+    public function __construct($securedUrlConfig)
+    {
+        $this->securedUrlConfig = $securedUrlConfig;
+    }
 
     /**
      * An alternative constructor that has to be called manually.
      *
-     * @param \TechDivision\Servlet\Servlet         $servlet         The servlet to process
      * @param \TechDivision\Servlet\ServletRequest  $servletRequest  The request instance
      * @param \TechDivision\Servlet\ServletResponse $servletResponse The response instance
      *
      * @return void
      */
-    public function init(Servlet $servlet, ServletRequest $servletRequest, ServletResponse $servletResponse)
+    public function init(ServletRequest $servletRequest, ServletResponse $servletResponse)
     {
-        $this->setServlet($servlet);
         $this->setServletRequest($servletRequest);
         $this->setServletResponse($servletResponse);
-    }
-
-    /**
-     * Sets the servlet instance.
-     *
-     * @param \TechDivision\Servlet\Servlet $servlet A servlet instance
-     *
-     * @return void
-     */
-    protected function setServlet($servlet)
-    {
-        $this->servlet = $servlet;
-    }
-
-    /**
-     * Returns the servlet instance.
-     *
-     * @return \TechDivision\Servlet\Servlet
-     */
-    protected function getServlet()
-    {
-        return $this->servlet;
     }
 
     /**
@@ -149,11 +135,21 @@ abstract class AbstractAuthentication
 
     /**
      * Returns servlet response instance.
-     * 
+     *
      * @return \TechDivision\Servlet\ServletResponse The servlet response instance
      */
     protected function getServletResponse()
     {
         return $this->servletResponse;
+    }
+    
+    /**
+     * The configuration with the secured URLs.
+     *
+     * @return array The secured URL configuration
+     */
+    protected function getSecuredUrlConfig()
+    {
+        return $this->securedUrlConfig;
     }
 }

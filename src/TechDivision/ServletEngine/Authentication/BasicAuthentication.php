@@ -44,13 +44,12 @@ class BasicAuthentication extends AbstractAuthentication
      */
     public function authenticate()
     {
-        $config = $this->getServlet()->getSecuredUrlConfig();
+        $config = $this->getSecuredUrlConfig();
         $req = $this->getServletRequest();
         $res = $this->getServletResponse();
-
-        $realm = $config['realm'];
-        $adapterType = $config['adapter_type'];
-        $options = $config['options'];
+        
+        $realm = $config['auth']['realm'];
+        $adapterType = $config['auth']['adapter_type'];
 
         // if client provided authentication data
         if ($authorizationData = $req->getHeader(HttpProtocol::HEADER_AUTHORIZATION)) {
@@ -67,13 +66,13 @@ class BasicAuthentication extends AbstractAuthentication
             if ($credentials) {
                 
                 // get real credentials
-                list($user, $pwd) = explode(':', $credentials);
+                list ($user, $pwd) = explode(':', $credentials);
 
+                // initialize the adapter class
+                $authAdapterClass = 'TechDivision\ServletEngine\Authentication\Adapters\\' . ucfirst($adapterType) . 'Adapter';
+                
                 // instantiate configured authentication adapter
-                $authAdapter = $this->getServlet()->getServletContext()->getApplication()->newInstance(
-                    'TechDivision\ServletEngine\Authentication\Adapters\\' . ucfirst($adapterType) . 'Adapter',
-                    array($options, $this->getServlet())
-                );
+                $authAdapter = new $authAdapterClass($config);
 
                 // delegate authentication to adapter
                 if ($authAdapter->authenticate($user, $pwd)) {
@@ -81,7 +80,7 @@ class BasicAuthentication extends AbstractAuthentication
                 }
             }
         }
-
+        
         // either authentication data was not provided or authentication failed
         $res->setStatusCode(401);
         $res->addHeader(HttpProtocol::HEADER_WWW_AUTHENTICATE, AbstractAuthentication::AUTHENTICATION_METHOD_BASIC . ' ' . 'realm="' . $realm . '"');

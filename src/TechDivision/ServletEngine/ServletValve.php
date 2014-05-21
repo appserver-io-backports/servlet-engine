@@ -1,7 +1,7 @@
 <?php
 
 /**
- * TechDivision\ServletEngine\ResourceLocator
+ * TechDivision\ServletEngine\ServletValve
  *
  * NOTICE OF LICENSE
  *
@@ -13,38 +13,41 @@
  *
  * @category  Appserver
  * @package   TechDivision_ServletEngine
- * @author    Markus Stockbauer <ms@techdivision.com>
  * @author    Tim Wagner <tw@techdivision.com>
- * @author    Johann Zelger <jz@techdivision.com>
  * @copyright 2014 TechDivision GmbH <info@techdivision.com>
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
+
 namespace TechDivision\ServletEngine;
 
-use TechDivision\Servlet\ServletRequest;
+use \TechDivision\Servlet\Http\HttpServletRequest;
+use \TechDivision\Servlet\Http\HttpServletResponse;
 
 /**
- * Interface for the resource locator instances.
+ * Valve implementation that will be executed by the servlet engine to handle
+ * an incoming Http servlet request.
  *
  * @category  Appserver
  * @package   TechDivision_ServletEngine
- * @author    Markus Stockbauer <ms@techdivision.com>
  * @author    Tim Wagner <tw@techdivision.com>
- * @author    Johann Zelger <jz@techdivision.com>
  * @copyright 2014 TechDivision GmbH <info@techdivision.com>
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-interface ResourceLocator
+class ServletValve
 {
-
+    
     /**
-     * Tries to locate the resource related with the request.
+     * Load the actual context instance, the servlet and handle the request.
      *
-     * @param \TechDivision\Servlet\ServletRequest $servletRequest The request instance to return the servlet for
+     * @param \TechDivision\Servlet\ServletRequest  $servletRequest  The request instance
+     * @param \TechDivision\Servlet\ServletResponse $servletResponse The response instance
      *
-     * @return \TechDivision\Servlet\Servlet The requested servlet
+     * @return void
      */
-    public function locate(ServletRequest $servletRequest);
+    public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
+    {
+        $servletRequest->getContext()->locate($servletRequest)->service($servletRequest, $servletResponse);
+    }
 }

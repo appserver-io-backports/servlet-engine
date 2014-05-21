@@ -27,6 +27,8 @@ use TechDivision\Http\HttpRequestInterface;
 use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Servlet\Http\HttpServletResponse;
+use TechDivision\WebServer\Dictionaries\ServerVars;
+use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
 
 /**
  * A Http servlet request implementation.
@@ -43,13 +45,6 @@ class Request implements HttpServletRequest
 {
 
     /**
-     * Request header data.
-     *
-     * @var array
-     */
-    protected $headers = array();
-
-    /**
      * Array that contain's the cookies passed with.
      * the request.
      *
@@ -58,22 +53,8 @@ class Request implements HttpServletRequest
     protected $cookies = array();
 
     /**
-     * An array that contains all request parameters.
-     *
-     * @var array
-     */
-    protected $parameterMap = array();
-    
-    /**
-     * The array with the server variables.
-     * 
-     * @var array
-     */
-    protected $serverVars = array();
-    
-    /**
      * The ID of requested session.
-     * 
+     *
      * @var string
      */
     protected $requestedSessionId;
@@ -86,114 +67,127 @@ class Request implements HttpServletRequest
     protected $pathInfo;
 
     /**
-     * The request method.
-     *
-     * @var string
-     */
-    protected $method;
-
-    /**
-     * The request body.
-     *
-     * @var string
-     */
-    protected $bodyStream;
-
-    /**
-     * Uri called by client.
-     *
-     * @var string
-     */
-    protected $uri;
-
-    /**
-     * Protocol version.
-     *
-     * @var string
-     */
-    protected $version;
-
-    /**
-     * Query string with params.
-     *
-     * @var string
-     */
-    protected $queryString;
-    
-    /**
      * The path to the servlet used to handle the request.
-     * 
+     *
      * @var string
      */
     protected $servletPath;
 
     /**
-     * Hold's the document root directory
-     *
-     * @var string
-     */
-    protected $documentRoot;
-    
-    /**
      * The context that allows access to session and server information.
-     * 
-     * @var \TechDivision\Context\Context
+     *
+     * @var \TechDivision\ServletEngine\Http\RequestContext
      */
     protected $context;
-    
+
+    /**
+     * The Http request instance.
+     *
+     * @var \TechDivision\Http\HttpRequestInteface
+     */
+    protected $httpRequest;
+
     /**
      * The servlet session related with the requested session ID.
-     * 
+     *
      * @var \TechDivision\ServletEngine\ServletSession
      */
     protected $session;
-    
+
     /**
      * The response instance bound to this request.
-     * 
+     *
      * @var \TechDivision\Servlet\Http\HttpServletResponse
      */
     protected $response;
-    
+
+    /**
+     * The server variables.
+     *
+     * @var array
+     */
+    protected $serverVars = array();
+
+    /**
+     * Flag that the request has been dispatched.
+     *
+     * @var boolean
+     */
+    protected $dispatched = false;
+
     /**
      * Injects the context that allows access to session and
      * server information.
-     * 
-     * @param \TechDivision\Context\Context $context The request context instance
-     * 
+     *
+     * @param \TechDivision\ServletEngine\Http\RequestContext $context The request context instance
+     *
      * @return void
      */
     public function injectContext(Context $context)
     {
         $this->context = $context;
     }
-    
+
+    /**
+     * Injects the server variables.
+     *
+     * @param array $serverVars The server variables
+     *
+     * @return void
+     */
+    public function injectServerVars(array $serverVars)
+    {
+        $this->serverVars = $serverVars;
+    }
+
+    /**
+     * Injects the Http request instance.
+     *
+     * @param \TechDivision\Http\HttpRequestInterface $httpRequest The Http request instance
+     *
+     * @return void
+     */
+    public function injectHttpRequest(HttpRequestInterface $httpRequest)
+    {
+        $this->httpRequest = $httpRequest;
+    }
+
+    /**
+     * Returns the Http request instance.
+     *
+     * @return \TechDivision\Http\HttpRequestInterface The Http request instance
+     */
+    public function getHttpRequest()
+    {
+        return $this->httpRequest;
+    }
+
     /**
      * Returns the context that allows access to session and
      * server information.
-     * 
-     * @return \TechDivision\Context\Context The request context
+     *
+     * @return \TechDivision\ServletEngine\Http\RequestContext The request context
      */
     public function getContext()
     {
         return $this->context;
     }
-    
+
     /**
      * Injects the servlet response bound to this request.
-     * 
+     *
      * @param \TechDivision\Servlet\Http\HttpServletResponse $response The servlet respone instance
-     * 
+     *
      * @return void
      */
     public function injectResponse(HttpServletResponse $response)
     {
         $this->response = $response;
     }
-    
+
     /**
      * Returns the servlet response bound to this request.
-     * 
+     *
      * @return \TechDivision\Servlet\Http\HttpServletResponse The response instance
      */
     public function getResponse()
@@ -205,12 +199,12 @@ class Request implements HttpServletRequest
      * Returns an array with all request parameters.
      *
      * @param array $parameterMap The array with the request parameters
-     * 
+     *
      * @return void
      */
     public function setParameterMap(array $parameterMap)
     {
-        $this->parameterMap = $parameterMap;
+        $this->getHttpRequest()->setParams($parameterMap);
     }
 
     /**
@@ -220,17 +214,27 @@ class Request implements HttpServletRequest
      */
     public function getParameterMap()
     {
-        return $this->parameterMap;
+        return $this->getHttpRequest()->getParams();
     }
 
     /**
      * Return content
      *
-     * @return string $content
+     * @return string $content  
+     */
+    public function getBodyContent()
+    {
+        return $this->getHttpRequest()->getBodyContent();
+    }
+
+    /**
+     * Return request content
+     *
+     * @return resource The request content
      */
     public function getBodyStream()
     {
-        return $this->bodyStream;
+        return $this->getHttpRequest()->getBodyStream();
     }
 
     /**
@@ -242,7 +246,7 @@ class Request implements HttpServletRequest
      */
     public function setVersion($version)
     {
-        $this->version = $version;
+        $this->getHttpRequest()->setVersion($version);
     }
 
     /**
@@ -252,7 +256,7 @@ class Request implements HttpServletRequest
      */
     public function getVersion()
     {
-        return $this->version;
+        return $this->getHttpRequest()->getVersion();
     }
 
     /**
@@ -282,7 +286,7 @@ class Request implements HttpServletRequest
      */
     public function getPart($name)
     {
-        throw new \Exception('Method ' . __METHOD__ . ' not implemented yet');
+        return $this->getHttpRequest()->getPart($name);
     }
 
     /**
@@ -292,46 +296,46 @@ class Request implements HttpServletRequest
      */
     public function getParts()
     {
-        throw new \Exception('Method ' . __METHOD__ . ' not implemented yet');
+        return $this->getHttpRequest()->getParts();
     }
-    
+
     /**
      * Sets the application context name (application name prefixed with a slash) for the actual request.
-     * 
+     *
      * @param string $contextPath The application context name
-     * 
+     *
      * @return void
      */
     public function setContextPath($contextPath)
     {
         $this->contextPath = $contextPath;
     }
-    
+
     /**
      * Returns the application context name (application name prefixed with a slash) for the actual request.
-     * 
+     *
      * @return string The application context name
      */
     public function getContextPath()
     {
         return $this->contextPath;
     }
-    
+
     /**
      * Sets the path to the servlet used to handle this request.
-     * 
+     *
      * @param string $servletPath The path to the servlet
-     * 
+     *
      * @return void
      */
     public function setServletPath($servletPath)
     {
         $this->servletPath = $servletPath;
     }
-    
+
     /**
      * Returns the path to the servlet used to handle this request.
-     * 
+     *
      * @return string The relative path to the servlet
      */
     public function getServletPath()
@@ -341,176 +345,76 @@ class Request implements HttpServletRequest
 
     /**
      * Returns the session for this request.
-     * 
+     *
      * @param boolean $create TRUE to create a new session, else FALSE
      *
      * @return \TechDivision\Servlet\Http\HttpSession The session instance
      */
     public function getSession($create = false)
     {
-        
+
         // try to load an already initialized session
         if ($this->session != null) {
             return $this->session;
         }
-        
+
         // if no session has already been load, initialize the session manager
         $manager = $this->getContext()->getSessionManager();
-        
+
         // if no session manager was found, we don't support sessions
         if ($manager == null) {
             return;
         }
-        
+
         // if no session ID has been set, try to load the default session cookie
         if ($this->requestedSessionId == null) {
             if (($cookie = $this->getCookie($manager->getSettings()->getSessionName())) != null) {
                 $this->requestedSessionId = $cookie->getValue();
             }
         }
-        
+
         // find or create a new session (if flag has been set)
         $this->session = $manager->find($this->requestedSessionId, $create);
-        
+
         // if a session has been found or created
         if ($this->session != null) {
-        
+
             // inject request/response and start it
             $this->session->injectRequest($this);
             $this->session->injectResponse($this->getResponse());
         }
-        
+
         // return the found session
         return $this->session;
     }
-    
+
     /**
      * Returns the absolute path info started from the context path.
-     * 
+     *
      * @return string The absolute path info
      */
     public function getPathInfo()
     {
         return $this->pathInfo;
     }
-    
+
     /**
      * Returns the absolute path info started from the context path.
-     * 
+     *
      * @param string $pathInfo The absolute path info
-     * 
+     *
      * @return void
      */
     public function setPathInfo($pathInfo)
     {
         $this->pathInfo = $pathInfo;
     }
-    
-    /**
-     * Sets the query string of the actual request.
-     * 
-     * @param string $queryString The query string of the actual request
-     * 
-     * @return void
-     */
-    public function setQueryString($queryString)
-    {
-        $this->queryString = $queryString;
-    }
 
-    /**
-     * Returns query string of the actual request.
-     *
-     * @return string|null The query string of the actual request
-     */
-    public function getQueryString()
-    {
-        return $this->queryString;
-    }
-
-    /**
-     * Returns header info by given key
-     *
-     * @param string $key The header key to get
-     *
-     * @return string|null
-     */
-    public function getHeader($key)
-    {
-        return $this->headers[$key];
-    }
-
-    /**
-     * Set headers data
-     *
-     * @param array $headers The headers array to set
-     *
-     * @return void
-     */
-    public function setHeaders($headers)
-    {
-        $this->headers = $headers;
-    }
-
-    /**
-     * Returns headers data
-     *
-     * @return array
-     */
-    public function getHeaders()
-    {
-        return $this->headers;
-    }
-
-    /**
-     * Set request method
-     *
-     * @param string $method Request-Method
-     *
-     * @return void
-     */
-    public function setMethod($method)
-    {
-        $this->method = $method;
-    }
-
-    /**
-     * Returns request method
-     *
-     * @return string
-     */
-    public function getMethod()
-    {
-        return $this->method;
-    }
-
-    /**
-     * Set request uri
-     *
-     * @param string $uri The uri to set
-     *
-     * @return void
-     */
-    public function setUri($uri)
-    {
-        $this->uri = $uri;
-    }
-
-    /**
-     * Returns request uri
-     *
-     * @return string
-     */
-    public function getUri()
-    {
-        return $this->uri;
-    }
-    
     /**
      * Adds the passed cookie to this request.
-     * 
+     *
      * @param \TechDivision\Servlet\Http\Cookie $cookie The cookie to add
-     * 
+     *
      * @return void
      */
     public function addCookie(Cookie $cookie)
@@ -546,6 +450,40 @@ class Request implements HttpServletRequest
     }
 
     /**
+     * Returns header info by given name
+     *
+     * @param string $name The header key to name
+     *
+     * @return string|null
+     */
+    public function getHeader($name)
+    {
+        return $this->getHttpRequest()->getHeader($name);
+    }
+
+    /**
+     * Set headers data
+     *
+     * @param array $headers The headers array to set
+     *
+     * @return void
+     */
+    public function setHeaders($headers)
+    {
+        $this->getHttpRequest()->setHeaders($headers);
+    }
+
+    /**
+     * Returns headers data
+     *
+     * @return array
+     */
+    public function getHeaders()
+    {
+        return $this->getHttpRequest()->getHeaders();
+    }
+
+    /**
      * Adds a header information got from connection.
      *
      * @param string $name  The header name
@@ -555,9 +493,9 @@ class Request implements HttpServletRequest
      */
     public function addHeader($name, $value)
     {
-        $this->headers[$name] = $value;
+        $this->getHttpRequest()->addHeader($name, $value);
     }
-    
+
     /**
      * Checks if header exists by given name.
      *
@@ -567,52 +505,52 @@ class Request implements HttpServletRequest
     */
     public function hasHeader($name)
     {
-        return isset($this->headers[$name]);
+        return $this->getHttpRequest()->hasHeader($name);
     }
 
-    /**
-     * Sets document root
-     *
-     * @param string $documentRoot The document root
-     *
-     * @return void
-     */
-    public function setDocumentRoot($documentRoot)
-    {
-        $this->documentRoot = $documentRoot;
-    }
-
-    /**
-     * Returns the document root
-     *
-     * @return string
-     */
-    public function getDocumentRoot()
-    {
-        return $this->documentRoot;
-    }
-    
     /**
      * Set the requested session ID for this request.  This is normally called
      * by the HTTP Connector, when it parses the request headers.
      *
      * @param string $requestedSessionId The new session id
-     * 
+     *
      * @return void
      */
     public function setRequestedSessionId($requestedSessionId)
     {
         $this->requestedSessionId = $requestedSessionId;
     }
-    
+
     /**
      * Return the session identifier included in this request, if any.
-     * 
+     *
      * @return string The session identifier included in this request
      */
     public function getRequestedSessionId()
     {
         return $this->requestedSessionId;
+    }
+
+    /**
+     * Sets the flag to mark the request dispatched.
+     *
+     * @param boolean $dispatched TRUE if the request has already been dispatched, else FALSE
+     *
+     * @return void
+     */
+    public function setDispatched($dispatched = true)
+    {
+        $this->dispatched = $dispatched;
+    }
+
+    /**
+     * Sets the flag that shows if the request has already been dispatched.
+     *
+     * @return boolean TRUE if the request has already been dispatched, else FALSE
+     */
+    public function isDispatched()
+    {
+        return $this->dispatched;
     }
 
     /**
@@ -622,17 +560,46 @@ class Request implements HttpServletRequest
      */
     public function getServerName()
     {
-        return $this->getContext()->getServerVar('SERVER_NAME');
+        return $this->getServerVar(ServerVars::SERVER_NAME);
     }
 
     /**
-     * Returns the server variables
+     * Returns query string of the actual request.
      *
-     * @return array The server variables
+     * @return string|null The query string of the actual request
+     */
+    public function getQueryString()
+    {
+        return $this->getServerVar(ServerVars::QUERY_STRING);
+    }
+
+    /**
+     * Returns request uri
+     *
+     * @return string
+     */
+    public function getUri()
+    {
+        return $this->getServerVar(ServerVars::X_REQUEST_URI);
+    }
+    /**
+     * Returns request method
+     *
+     * @return string
+     */
+    public function getMethod()
+    {
+        return $this->getServerVar(ServerVars::REQUEST_METHOD);
+    }
+
+    /**
+     * Returns the array with the server variables.
+     *
+     * @return array The array with the server variables
      */
     public function getServerVars()
     {
-        return $this->getContext()->getServerVars();
+        return $this->serverVars;
     }
 
     /**
@@ -644,6 +611,8 @@ class Request implements HttpServletRequest
      */
     public function getServerVar($name)
     {
-        return $this->getContext()->getServerVar($name);
+        if (array_key_exists($name, $serverVars = $this->getServerVars())) {
+            return $serverVars[$name];
+        }
     }
 }

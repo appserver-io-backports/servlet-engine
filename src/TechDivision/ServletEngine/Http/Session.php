@@ -59,28 +59,28 @@ class Session implements HttpSession
 
     /**
      * Prefix for all tags.
-     * 
+     *
      * @var string
      */
     const TAG_PREFIX = 'customtag-';
     
     /**
      * The session cookie instance.
-     * 
+     *
      * @var \TechDivision\Servlet\Http\Cookie
      */
     protected $sessionCookie;
 
     /**
      * The servlet request instance.
-     * 
+     *
      * @var \TechDivision\Servlet\Http\HttpServletRequest
      */
     protected $request;
 
     /**
      * The servlet response instance.
-     * 
+     *
      * @var \TechDivision\Servlet\Http\HttpServletResponse
      */
     protected $response;
@@ -126,56 +126,56 @@ class Session implements HttpSession
     
     /**
      * The session name to use.
-     * 
+     *
      * @var string
      */
     protected $sessionName = DefaultSessionSettings::DEFAULT_SESSION_NAME;
     
     /**
      * The cookie domain set for the session.
-     * 
+     *
      * @var string
      */
     protected $sessionCookieDomain = Cookie::LOCALHOST;
     
     /**
      * The cookie path set for the session.
-     * 
+     *
      * @var string
      */
     protected $sessionCookiePath = DefaultSessionSettings::DEFAULT_SESSION_COOKIE_PATH;
     
     /**
      * The session cookie lifetime.
-     * 
+     *
      * @var integer
      */
     protected $sessionCookieLifetime = 0;
     
     /**
      * The flag that the session cookie should only be set in a secure connection.
-     * 
+     *
      * @var boolean
      */
     protected $sessionCookieSecure = false;
     
     /**
      * The flag if the session should set a Http only cookie.
-     * 
+     *
      * @var boolean
      */
     protected $sessionCookieHttpOnly = false;
     
     /**
      * The probability the garbage collector will be invoked on the session.
-     * 
+     *
      * @var float
      */
     protected $garbageCollectionProbability = 1.0;
     
     /**
      * The inactivity timeout until the session will be invalidated.
-     * 
+     *
      * @var integer
      */
     protected $inactivityTimeout = 1440;
@@ -189,7 +189,7 @@ class Session implements HttpSession
      *
      * Session instances MUST NOT be created manually! They should be retrieved via
      * the Session Manager or through dependency injection (use SessionInterface!).
-     * 
+     *
      * @param string|null  $id                    The public session identifier which is also used in the session cookie
      * @param integer|null $lastActivityTimestamp Unix timestamp of the last known activity for this session
      * @param array|null   $tags                  A list of tags set for this session
@@ -212,7 +212,7 @@ class Session implements HttpSession
      * Injects the Http request instance.
      *
      * @param \TechDivision\Servlet\Http\HttpServletRequest $request The request instance
-     * 
+     *
      * @return void
      */
     public function injectRequest(HttpServletRequest $request)
@@ -222,9 +222,9 @@ class Session implements HttpSession
     
     /**
      * Injects the Http response instance.
-     * 
+     *
      * @param \TechDivision\Servlet\Http\HttpServletResponse $response The response instance
-     * 
+     *
      * @return void
      */
     public function injectResponse(HttpServletResponse $response)
@@ -702,9 +702,9 @@ class Session implements HttpSession
     
     /**
      * Creates a random string with the passed lenght.
-     * 
+     *
      * @param integer $length The string lenght to generate
-     * 
+     *
      * @return string The random string
      */
     protected function generateRandomString($length = 32)
@@ -723,7 +723,7 @@ class Session implements HttpSession
     
     /**
      * Returns the session name to use.
-     * 
+     *
      * @return string The session name
      */
     public function getSessionName()
@@ -733,7 +733,7 @@ class Session implements HttpSession
     
     /**
      * Returns the session cookie lifetime.
-     * 
+     *
      * @return integer
      */
     public function getSessionCookieLifetime()
@@ -743,7 +743,7 @@ class Session implements HttpSession
     
     /**
      * Returns the cookie domain set for the session.
-     * 
+     *
      * @return string
      */
     public function getSessionCookieDomain()
@@ -753,7 +753,7 @@ class Session implements HttpSession
     
     /**
      * Returns the cookie path set for the session.
-     * 
+     *
      * @return string
      */
     public function getSessionCookiePath()
@@ -763,7 +763,7 @@ class Session implements HttpSession
     
     /**
      * Returns the flag that the session cookie should only be set in a secure connection.
-     * 
+     *
      * @return boolean TRUE if a secure cookie should be set, else FALSE
      */
     public function getSessionCookieSecure()
@@ -773,7 +773,7 @@ class Session implements HttpSession
     
     /**
      * Returns the flag if the session should set a Http only cookie.
-     * 
+     *
      * @return boolean TRUE if a Http only cookie should be used
      */
     public function getSessionCookieHttpOnly()
@@ -783,7 +783,7 @@ class Session implements HttpSession
     
     /**
      * Returns the probability the garbage collector will be invoked on the session.
-     * 
+     *
      * @return float The garbage collector probability
      */
     public function getGarbageCollectionProbability()
@@ -793,7 +793,7 @@ class Session implements HttpSession
     
     /**
      * Returns the inactivity timeout until the session will be invalidated.
-     * 
+     *
      * @return integer The inactivity timeout in seconds
      */
     public function getInactivityTimeout()
@@ -805,7 +805,7 @@ class Session implements HttpSession
      * Returns the session name to use.
      *
      * @param string $sessionName The session name
-     * 
+     *
      * @return void
      */
     public function setSessionName($sessionName)
@@ -817,7 +817,7 @@ class Session implements HttpSession
      * Returns the session cookie lifetime.
      *
      * @param integer $sessionCookieLifetime session cookie lifetime
-     * 
+     *
      * @return void
      */
     public function setSessionCookieLifetime($sessionCookieLifetime)
@@ -829,7 +829,7 @@ class Session implements HttpSession
      * Returns the cookie domain set for the session.
      *
      * @param string $sessionCookieDomain The cookie domain set for the session
-     * 
+     *
      * @return void
      */
     public function setSessionCookieDomain($sessionCookieDomain)
@@ -841,7 +841,7 @@ class Session implements HttpSession
      * Returns the cookie path set for the session.
      *
      * @param string $sessionCookiePath The cookie path set for the session
-     * 
+     *
      * @return void
      */
     public function setSessionCookiePath($sessionCookiePath)
@@ -853,7 +853,7 @@ class Session implements HttpSession
      * Returns the flag that the session cookie should only be set in a secure connection.
      *
      * @param boolean $sessionCookieSecure TRUE if a secure cookie should be set, else FALSE
-     * 
+     *
      * @return void
      */
     public function setSessionCookieSecure($sessionCookieSecure)
@@ -865,7 +865,7 @@ class Session implements HttpSession
      * Returns the flag if the session should set a Http only cookie.
      *
      * @param boolean $sessionCookieHttpOnly TRUE if a Http only cookie should be used
-     * 
+     *
      * @return void
      */
     public function setSessionCookieHttpOnly($sessionCookieHttpOnly)
@@ -877,7 +877,7 @@ class Session implements HttpSession
      * Returns the probability the garbage collector will be invoked on the session.
      *
      * @param float $garbageCollectionProbability The garbage collector probability
-     * 
+     *
      * @return void
      */
     public function setGarbageCollectionProbability($garbageCollectionProbability)
@@ -889,7 +889,7 @@ class Session implements HttpSession
      * Returns the inactivity timeout until the session will be invalidated.
      *
      * @param integer $inactivityTimeout The inactivity timeout in seconds
-     * 
+     *
      * @return void
      */
     public function setInactivityTimeout($inactivityTimeout)

@@ -42,24 +42,10 @@ class HtdigestAdapter extends AuthenticationAdapter
 {
     /**
      * The content of the htdigest file.
-     * 
+     *
      * @var array
      */
     protected $htdigest = array();
-
-    /**
-     * Initialize the adapter with the options and the servlet instance.
-     *
-     * @param array                         $options The options
-     * @param \TechDivision\Servlet\Servlet $servlet A servlet instance
-     * 
-     * @return void
-     */
-    public function __construct($options, Servlet $servlet)
-    {
-        parent::__construct($options, $servlet);
-        $this->init();
-    }
 
     /**
      * Initializes the adapter.
@@ -68,11 +54,9 @@ class HtdigestAdapter extends AuthenticationAdapter
      */
     public function init()
     {
-        // get current web app path.
-        $webAppPath = $this->getServlet()->getServletContext()->getWebappPath();
-
+        
         // get content of htdigest file.
-        $htDigestData = file($webAppPath . DIRECTORY_SEPARATOR . 'WEB-INF' . DIRECTORY_SEPARATOR . $this->getFilename());
+        $htDigestData = file($this->getFilename());
 
         // prepare htdigest entries
         foreach ($htDigestData as $entry) {

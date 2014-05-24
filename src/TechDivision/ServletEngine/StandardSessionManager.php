@@ -53,14 +53,14 @@ class StandardSessionManager implements SessionManager
      * @var \TechDivision\Storage\StorageInterface
      */
     protected $storage;
-    
+
     /**
      * Array to store the sessions that has already been initilized in this request.
      *
      * @var \SplObjectStorage()
      */
     protected $sessions;
-    
+
     /**
      * Initialize the session manager.
      *
@@ -93,22 +93,29 @@ class StandardSessionManager implements SessionManager
     {
         $this->storage = $storage;
     }
-    
+
     /**
      * Creates a new session with the passed session ID and session name if give.
      *
-     * @param string|null $id The session ID used to create the session
+     * @param string|null $id          The session ID used to create the session
+     * @param string|null $sessionName The name of the requested session
      *
      * @return \TechDivision\Servlet\HttpSession The requested session
      */
-    public function create($id = null)
+    public function create($id = null, $sessionName = null)
     {
         // initialize and return the session instance
         $session = new Session($id, time());
         $session->injectStorage($this->storage);
-        
+
+        // check if a session name has been specified
+        if ($sessionName == null) { // if not, set the default session name
+            $session->setSessionName($this->getSettings()->getSessionName());
+        } else {
+            $session->setSessionName($sessionName);
+        }
+
         // copy the default session configuration from the settings
-        $session->setSessionName($this->getSettings()->getSessionName());
         $session->setSessionCookieLifetime($this->getSettings()->getSessionCookieLifetime());
         $session->setSessionCookieDomain($this->getSettings()->getSessionCookieDomain());
         $session->setSessionCookiePath($this->getSettings()->getSessionCookiePath());
@@ -116,12 +123,12 @@ class StandardSessionManager implements SessionManager
         $session->setSessionCookieHttpOnly($this->getSettings()->getSessionCookieHttpOnly());
         $session->setGarbageCollectionProbability($this->getSettings()->getGarbageCollectionProbability());
         $session->setInactivityTimeout($this->getSettings()->getInactivityTimeout());
-        
+
         // attach the session to the manager and return it
         $this->attach($session);
         return $session;
     }
-    
+
     /**
      * Attachs the passed session to the manager and returns the instance. If a session
      * with the session identifier already exists, it will be overwritten.
@@ -143,12 +150,13 @@ class StandardSessionManager implements SessionManager
      * precedence. If no session id is found, a new one is created and assigned
      * to the request.
      *
-     * @param string|null $id     The ID of the session to find
-     * @param boolean     $create If TRUE, a new session will be created if the session with the passed ID can't be found
+     * @param string|null $id          The ID of the session to find
+     * @param string|null $sessionName The name of the requested session
+     * @param boolean     $create      If TRUE, a new session will be created if the session with the passed ID can't be found
      *
      * @return \TechDivision\Servlet\HttpSession The requested session
      */
-    public function find($id = null, $create = false)
+    public function find($id = null, $sessionName = null, $create = false)
     {
 
         // try to load the session with the passed ID
@@ -157,13 +165,13 @@ class StandardSessionManager implements SessionManager
                 return $session;
             }
         }
-        
+
         // create a new session with the requested session ID if requested
         if ($create === true) {
-            return $this->create($id);
+            return $this->create($id, $sessionName);
         }
     }
-    
+
     /**
      * Returns all sessions actually attached to the session manager.
      *
@@ -173,7 +181,7 @@ class StandardSessionManager implements SessionManager
     {
         return $this->sessions;
     }
-    
+
     /**
      * Returns the session settings.
      *

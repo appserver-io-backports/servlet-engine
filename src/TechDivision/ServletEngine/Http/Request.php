@@ -60,6 +60,13 @@ class Request implements HttpServletRequest
     protected $requestedSessionId;
 
     /**
+     * The name of requested session.
+     *
+     * @var string
+     */
+    protected $requestedSessionName;
+
+    /**
      * Path info.
      *
      * @var string
@@ -220,7 +227,7 @@ class Request implements HttpServletRequest
     /**
      * Return content
      *
-     * @return string $content  
+     * @return string $content
      */
     public function getBodyContent()
     {
@@ -354,7 +361,9 @@ class Request implements HttpServletRequest
     {
 
         // try to load an already initialized session
-        if ($this->session != null) {
+        if ($this->session != null &&
+            $this->session->getId() === $this->getRequestedSessionId() &&
+            $this->session->getSessionName() === $this->getRequestedSessionName()) {
             return $this->session;
         }
 
@@ -366,23 +375,32 @@ class Request implements HttpServletRequest
             return;
         }
 
-        // if no session ID has been set, try to load the default session cookie
-        if ($this->requestedSessionId == null) {
-            if (($cookie = $this->getCookie($manager->getSettings()->getSessionName())) != null) {
-                $this->requestedSessionId = $cookie->getValue();
+        // check if a requested session ID has been set
+        if ($this->getRequestedSessionId() == null) {
+
+            // if we can't find a requested session name, we try to load the default session cookie
+            if ($this->getRequestedSessionName() == null) {
+                $this->setRequestedSessionName($manager->getSettings()->getSessionName());
+            }
+
+            // load session cookie and set session ID
+            if (($cookie = $this->getCookie($this->getRequestedSessionName())) != null) {
+                $this->setRequestedSessionId($cookie->getValue());
             }
         }
 
         // find or create a new session (if flag has been set)
-        $this->session = $manager->find($this->requestedSessionId, $create);
+        $session = $manager->find($this->getRequestedSessionId(), $this->getRequestedSessionName(), $create);
 
-        // if a session has been found or created
-        if ($this->session != null) {
-
-            // inject request/response and start it
-            $this->session->injectRequest($this);
-            $this->session->injectResponse($this->getResponse());
+        // if no session has been found or created we return immediately
+        if ($session == null) {
+            return;
         }
+
+        // inject request/response and start it
+        $this->session = $session;
+        $this->session->injectRequest($this);
+        $this->session->injectResponse($this->getResponse());
 
         // return the found session
         return $this->session;
@@ -529,6 +547,28 @@ class Request implements HttpServletRequest
     public function getRequestedSessionId()
     {
         return $this->requestedSessionId;
+    }
+
+    /**
+     * Set the requested session name for this request.
+     *
+     * @param string $requestedSessionName The new session name
+     *
+     * @return void
+     */
+    public function setRequestedSessionName($requestedSessionName)
+    {
+        $this->requestedSessionName = $requestedSessionName;
+    }
+
+    /**
+     * Return the session name included in this request, if any.
+     *
+     * @return string The session name included in this request
+     */
+    public function getRequestedSessionName()
+    {
+        return $this->requestedSessionName;
     }
 
     /**

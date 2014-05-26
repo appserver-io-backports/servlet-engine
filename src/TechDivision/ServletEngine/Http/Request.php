@@ -27,7 +27,7 @@ use TechDivision\Http\HttpRequestInterface;
 use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Servlet\Http\HttpServletResponse;
-use TechDivision\WebServer\Dictionaries\ServerVars;
+use TechDivision\Server\Dictionaries\ServerVars;
 use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
 
 /**

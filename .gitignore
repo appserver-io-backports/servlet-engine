@@ -1,6 +1,7 @@
 /.project
 /.settings
 /.buildpath
+/.idea
 /target
 /.idea
 /.sonar

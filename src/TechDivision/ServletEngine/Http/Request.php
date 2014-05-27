@@ -375,18 +375,14 @@ class Request implements HttpServletRequest
             return;
         }
 
-        // check if a requested session ID has been set
-        if ($this->getRequestedSessionId() == null) {
+        // if we can't find a requested session name, we try to load the default session cookie
+        if ($this->getRequestedSessionName() == null) {
+            $this->setRequestedSessionName($manager->getSettings()->getSessionName());
+        }
 
-            // if we can't find a requested session name, we try to load the default session cookie
-            if ($this->getRequestedSessionName() == null) {
-                $this->setRequestedSessionName($manager->getSettings()->getSessionName());
-            }
-
-            // load session cookie and set session ID
-            if (($cookie = $this->getCookie($this->getRequestedSessionName())) != null) {
-                $this->setRequestedSessionId($cookie->getValue());
-            }
+        // load session cookie and set session ID
+        if (($cookie = $this->getCookie($this->getRequestedSessionName())) != null) {
+            $this->setRequestedSessionId($cookie->getValue());
         }
 
         // find or create a new session (if flag has been set)

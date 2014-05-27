@@ -63,7 +63,7 @@ class Session implements HttpSession
      * @var string
      */
     const TAG_PREFIX = 'customtag-';
-    
+
     /**
      * The session cookie instance.
      *
@@ -123,56 +123,56 @@ class Session implements HttpSession
      * @var integer
      */
     protected $now;
-    
+
     /**
      * The session name to use.
      *
      * @var string
      */
     protected $sessionName = DefaultSessionSettings::DEFAULT_SESSION_NAME;
-    
+
     /**
      * The cookie domain set for the session.
      *
      * @var string
      */
     protected $sessionCookieDomain = Cookie::LOCALHOST;
-    
+
     /**
      * The cookie path set for the session.
      *
      * @var string
      */
     protected $sessionCookiePath = DefaultSessionSettings::DEFAULT_SESSION_COOKIE_PATH;
-    
+
     /**
      * The session cookie lifetime.
      *
      * @var integer
      */
     protected $sessionCookieLifetime = 0;
-    
+
     /**
      * The flag that the session cookie should only be set in a secure connection.
      *
      * @var boolean
      */
     protected $sessionCookieSecure = false;
-    
+
     /**
      * The flag if the session should set a Http only cookie.
      *
      * @var boolean
      */
     protected $sessionCookieHttpOnly = false;
-    
+
     /**
      * The probability the garbage collector will be invoked on the session.
      *
      * @var float
      */
     protected $garbageCollectionProbability = 1.0;
-    
+
     /**
      * The inactivity timeout until the session will be invalidated.
      *
@@ -196,18 +196,13 @@ class Session implements HttpSession
      */
     public function __construct($id = null, $lastActivityTimestamp = null, array $tags = array())
     {
-
+        $this->id = $id;
+        $this->lastActivityTimestamp = $lastActivityTimestamp;
+        $this->tags = $tags;
         $this->now = time();
         $this->sessionCookieLifetime = time() + 86400;
-        
-        if ($id !== null) {
-            $this->id = $id;
-            $this->lastActivityTimestamp = $lastActivityTimestamp;
-            $this->started = true;
-            $this->tags = $tags;
-        }
     }
-    
+
     /**
      * Injects the Http request instance.
      *
@@ -219,7 +214,7 @@ class Session implements HttpSession
     {
         $this->request = $request;
     }
-    
+
     /**
      * Injects the Http response instance.
      *
@@ -281,7 +276,7 @@ class Session implements HttpSession
             if ($this->id == null) {
                 $this->id = $this->generateRandomString(32);
             }
-            
+
             $this->sessionCookie = new Cookie(
                 $this->getSessionName(),
                 $this->id,
@@ -292,12 +287,12 @@ class Session implements HttpSession
                 $this->getSessionCookieSecure(),
                 $this->getSessionCookieHttpOnly()
             );
-            
+
             $this->response->addCookie($this->sessionCookie);
-            
+
             $this->lastActivityTimestamp = $this->now;
             $this->started = true;
-            
+
             $this->writeSessionInfoCacheEntry();
         }
     }
@@ -340,7 +335,7 @@ class Session implements HttpSession
      */
     public function resume()
     {
-        
+
         if ($this->started === false && $this->canBeResumed()) {
 
             $this->id = $this->sessionCookie->getValue();
@@ -615,12 +610,12 @@ class Session implements HttpSession
      */
     protected function writeSessionInfoCacheEntry()
     {
-        
+
         $sessionInfo = array(
             'lastActivityTimestamp' => $this->lastActivityTimestamp,
             'tags' => $this->tags
         );
-        
+
         $tagsForCacheEntry = array_map(
             function ($tag) {
                 return Session::TAG_PREFIX . $tag;
@@ -699,7 +694,7 @@ class Session implements HttpSession
             }
         }
     }
-    
+
     /**
      * Creates a random string with the passed lenght.
      *
@@ -709,10 +704,10 @@ class Session implements HttpSession
      */
     protected function generateRandomString($length = 32)
     {
-        
+
         // prepare an array with the chars used to create a random string
         $letters = str_split('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz');
-        
+
         // create and return the random string
         $bytes = '';
         foreach (range(1, $length) as $i) {
@@ -720,7 +715,7 @@ class Session implements HttpSession
         }
         return $bytes;
     }
-    
+
     /**
      * Returns the session name to use.
      *
@@ -730,7 +725,7 @@ class Session implements HttpSession
     {
         return $this->sessionName;
     }
-    
+
     /**
      * Returns the session cookie lifetime.
      *
@@ -740,7 +735,7 @@ class Session implements HttpSession
     {
         return $this->sessionCookieLifetime;
     }
-    
+
     /**
      * Returns the cookie domain set for the session.
      *
@@ -750,7 +745,7 @@ class Session implements HttpSession
     {
         return $this->sessionCookieDomain;
     }
-    
+
     /**
      * Returns the cookie path set for the session.
      *
@@ -760,7 +755,7 @@ class Session implements HttpSession
     {
         return $this->sessionCookiePath;
     }
-    
+
     /**
      * Returns the flag that the session cookie should only be set in a secure connection.
      *
@@ -770,7 +765,7 @@ class Session implements HttpSession
     {
         return $this->sessionCookieSecure;
     }
-    
+
     /**
      * Returns the flag if the session should set a Http only cookie.
      *
@@ -780,7 +775,7 @@ class Session implements HttpSession
     {
         return $this->sessionCookieHttpOnly;
     }
-    
+
     /**
      * Returns the probability the garbage collector will be invoked on the session.
      *
@@ -790,7 +785,7 @@ class Session implements HttpSession
     {
         return $this->garbageCollectionProbability;
     }
-    
+
     /**
      * Returns the inactivity timeout until the session will be invalidated.
      *
@@ -812,7 +807,7 @@ class Session implements HttpSession
     {
         $this->sessionName = $sessionName;
     }
-    
+
     /**
      * Returns the session cookie lifetime.
      *
@@ -824,7 +819,7 @@ class Session implements HttpSession
     {
         $this->sessionCookieLifetime = $sessionCookieLifetime;
     }
-    
+
     /**
      * Returns the cookie domain set for the session.
      *
@@ -836,7 +831,7 @@ class Session implements HttpSession
     {
         $this->sessionCookieDomain = $sessionCookieDomain;
     }
-    
+
     /**
      * Returns the cookie path set for the session.
      *
@@ -848,7 +843,7 @@ class Session implements HttpSession
     {
         $this->sessionCookiePath = $sessionCookiePath;
     }
-    
+
     /**
      * Returns the flag that the session cookie should only be set in a secure connection.
      *
@@ -860,7 +855,7 @@ class Session implements HttpSession
     {
         $this->sessionCookieSecure = $sessionCookieSecure;
     }
-    
+
     /**
      * Returns the flag if the session should set a Http only cookie.
      *
@@ -872,7 +867,7 @@ class Session implements HttpSession
     {
         $this->sessionCookieHttpOnly = $sessionCookieHttpOnly;
     }
-    
+
     /**
      * Returns the probability the garbage collector will be invoked on the session.
      *
@@ -884,7 +879,7 @@ class Session implements HttpSession
     {
         $this->garbageCollectionProbability = $garbageCollectionProbability;
     }
-    
+
     /**
      * Returns the inactivity timeout until the session will be invalidated.
      *

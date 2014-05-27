@@ -361,10 +361,18 @@ class Request implements HttpServletRequest
     {
 
         // try to load an already initialized session
-        if ($this->session != null &&
-            $this->session->getId() === $this->getRequestedSessionId() &&
-            $this->session->getSessionName() === $this->getRequestedSessionName()) {
-            return $this->session;
+        if ($this->session != null) {
+
+            // first check if the session has been started
+            if ($this->session->isStarted() === false) { // start it, if not
+                $this->session->start();
+            }
+
+            // check if session ID/name equals
+            if ($this->session->getId() === $this->getRequestedSessionId() &&
+                $this->session->getSessionName() === $this->getRequestedSessionName()) {
+                return $this->session;
+            }
         }
 
         // if no session has already been load, initialize the session manager

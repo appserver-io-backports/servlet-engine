@@ -38,70 +38,77 @@ class DefaultSessionSettings implements SessionSettings
      * @var string
      */
     const DEFAULT_SESSION_NAME = 'SESSID';
-    
+
     /**
      * The default session cookie path.
      *
      * @var string
      */
     const DEFAULT_SESSION_COOKIE_PATH = '/';
-    
+
     /**
      * The session name to use.
      *
      * @var string
      */
     protected $sessionName = DefaultSessionSettings::DEFAULT_SESSION_NAME;
-    
+
     /**
      * The session cookie lifetime.
      *
      * @var integer
      */
     protected $sessionCookieLifetime = 0;
-    
+
+    /**
+     * The maximum age in seconds, or NULL if none has been defined.
+     *
+     * @var integer
+     */
+    protected $sessionMaxiumAge = 0;
+
     /**
      * The cookie domain set for the session.
      *
      * @var string
      */
     protected $sessionCookieDomain = Cookie::LOCALHOST;
-    
+
     /**
      * The cookie path set for the session.
      *
      * @var string
      */
     protected $sessionCookiePath = DefaultSessionSettings::DEFAULT_SESSION_COOKIE_PATH;
-    
+
     /**
      * The flag that the session cookie should only be set in a secure connection.
      *
      * @var boolean
      */
     protected $sessionCookieSecure = false;
-    
+
     /**
      * The flag if the session should set a Http only cookie.
      *
      * @var boolean
      */
     protected $sessionCookieHttpOnly = false;
-    
+
     /**
      * The probability the garbage collector will be invoked on the session.
      *
      * @var float
      */
     protected $garbageCollectionProbability = 1.0;
-    
+
     /**
      * The inactivity timeout until the session will be invalidated.
      *
      * @var integer
      */
     protected $inactivityTimeout = 1440;
-    
+
     /**
      * Initialize the default session settings.
      *
@@ -122,7 +129,7 @@ class DefaultSessionSettings implements SessionSettings
     {
         $this->sessionName = $sessionName;
     }
-    
+
     /**
      * Returns the session name to use.
      *
@@ -132,7 +139,7 @@ class DefaultSessionSettings implements SessionSettings
     {
         return $this->sessionName;
     }
-    
+
     /**
      * Returns the session cookie lifetime.
      *
@@ -142,7 +149,17 @@ class DefaultSessionSettings implements SessionSettings
     {
         return $this->sessionCookieLifetime;
     }
-    
+
+    /**
+     * Returns the number of seconds until the session expires, if defined.
+     *
+     * @return integer The maximum age in seconds, or NULL if none has been defined.
+     */
+    public function getSessionMaximumAge()
+    {
+        return $this->sessionMaximumAge;
+    }
+
     /**
      * Returns the cookie domain set for the session.
      *
@@ -152,7 +169,7 @@ class DefaultSessionSettings implements SessionSettings
     {
         return $this->sessionCookieDomain;
     }
-    
+
     /**
      * Returns the cookie path set for the session.
      *
@@ -162,7 +179,7 @@ class DefaultSessionSettings implements SessionSettings
     {
         return $this->sessionCookiePath;
     }
-    
+
     /**
      * Returns the flag that the session cookie should only be set in a secure connection.
      *
@@ -172,7 +189,7 @@ class DefaultSessionSettings implements SessionSettings
     {
         return $this->sessionCookieSecure;
     }
-    
+
     /**
      * Returns the flag if the session should set a Http only cookie.
      *
@@ -182,7 +199,7 @@ class DefaultSessionSettings implements SessionSettings
     {
         return $this->sessionCookieHttpOnly;
     }
-    
+
     /**
      * Returns the probability the garbage collector will be invoked on the session.
      *
@@ -192,7 +209,7 @@ class DefaultSessionSettings implements SessionSettings
     {
         return $this->garbageCollectionProbability;
     }
-    
+
     /**
      * Returns the inactivity timeout until the session will be invalidated.
      *

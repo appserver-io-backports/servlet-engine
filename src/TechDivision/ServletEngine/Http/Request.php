@@ -372,16 +372,30 @@ class Request implements HttpServletRequest
         }
 
         // find or create a new session (if flag has been set)
-        $session = $manager->find($this->getRequestedSessionId(), $this->getRequestedSessionName(), $create);
+        $session = $manager->find($this->getRequestedSessionId());
 
         // if no session has been found or created we return immediately
         if ($session == null) {
-            return;
-        }
 
-        // inject request/response and start it
-        $session->injectRequest($this);
-        $session->injectResponse($this->getResponse());
+            // try to load the requested session ID
+            $id = $this->getRequestedSessionId();
+
+            // check if a session ID has been specified
+            if ($id == null) { // if not, generate a unique one
+                $id = $manager->generateRandomString();
+            }
+
+            // try to load the requested session name
+            $sessionName = $this->getRequestedSessionName();
+
+            // check if a session name has been specified
+            if ($sessionName == null) { // if not, set the default session name
+                $sessionName = $this->getSettings()->getSessionName();
+            }
+
+            // create a new session
+            $session = $manager->create($id, $sessionName);
+        }
 
         // return the found session
         return $session;

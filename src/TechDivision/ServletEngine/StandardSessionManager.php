@@ -22,11 +22,13 @@
 namespace TechDivision\ServletEngine;
 
 use TechDivision\Servlet\Http\HttpSession;
+use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Storage\StorageInterface;
 use TechDivision\ServletEngine\Http\Session;
 use TechDivision\ServletEngine\SessionSettings;
 use TechDivision\Storage\StackableStorage;
 use TechDivision\Storage\GenericStackable;
+use TechDivision\Servlet\Http\Cookie;
 
 /**
  * A standard session manager implementation that provides session
@@ -43,33 +45,6 @@ class StandardSessionManager extends GenericStackable implements SessionManager
 {
 
     /**
-     *Initializes the internal member variables.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-
-        /**
-         * The session settings.
-         * @var \TechDivision\ServletEngine\Settings
-         */
-        $this->settings;
-
-        /**
-         * Cache storage for this session.
-         * @var \TechDivision\Storage\StorageInterface
-         */
-        $this->storage;
-
-        /**
-         * Array to store the sessions that has already been initilized in this request.
-         * @var \TechDivision\Storage\StorageInterface
-         */
-        $this->sessions;
-    }
-
-    /**
      * Injects the session storage to persist the sessions.
      *
      * @param \TechDivision\Storage\StorageInterface $sessions The session storage to use
@@ -79,18 +54,6 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     public function injectSessions(StorageInterface $sessions)
     {
         $this->sessions = $sessions;
-    }
-
-    /**
-     * Injects the storage to persist session data.
-     *
-     * @param \TechDivision\Storage\StorageInterface $storage The session storage to use
-     *
-     * @return void
-     */
-    public function injectStorage(StorageInterface $storage)
-    {
-        $this->storage = $storage;
     }
 
     /**
@@ -116,16 +79,6 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     }
 
     /**
-     * Returns all sessions actually attached to the session manager.
-     *
-     * @return \TechDivision\Storage\StorageInterface The container with sessions
-     */
-    public function getStorage()
-    {
-        return $this->storage;
-    }
-
-    /**
      * Returns the session settings.
      *
      * @return \TechDivision\ServletEngine\SessionSettings The session settings
@@ -138,36 +91,30 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     /**
      * Creates a new session with the passed session ID and session name if give.
      *
-     * @param string|null $id          The session ID used to create the session
-     * @param string|null $sessionName The name of the requested session
+     * @param string $id          The unique session ID to use
+     * @param string $sessionName The name of the session to use
      *
      * @return \TechDivision\Servlet\HttpSession The requested session
      */
-    public function create($id = null, $sessionName = null)
+    public function create($id, $sessionName)
     {
 
-        // initialize and return the session instance
-        $session = new Session($id, time());
-        $session->injectStorage($this->getStorage());
-
-        // check if a session name has been specified
-        if ($sessionName == null) { // if not, set the default session name
-            $session->setSessionName($this->getSettings()->getSessionName());
-        } else {
-            $session->setSessionName($sessionName);
-        }
-
         // copy the default session configuration from the settings
-        $session->setSessionCookieLifetime($this->getSettings()->getSessionCookieLifetime());
-        $session->setSessionCookieDomain($this->getSettings()->getSessionCookieDomain());
-        $session->setSessionCookiePath($this->getSettings()->getSessionCookiePath());
-        $session->setSessionCookieSecure($this->getSettings()->getSessionCookieSecure());
-        $session->setSessionCookieHttpOnly($this->getSettings()->getSessionCookieHttpOnly());
-        $session->setGarbageCollectionProbability($this->getSettings()->getGarbageCollectionProbability());
-        $session->setInactivityTimeout($this->getSettings()->getInactivityTimeout());
+        $lifetime = $this->getSettings()->getSessionCookieLifetime();
+        $maximumAge = $this->getSettings()->getSessionMaximumAge();
+        $domain = $this->getSettings()->getSessionCookieDomain();
+        $path = $this->getSettings()->getSessionCookiePath();
+        $secure = $this->getSettings()->getSessionCookieSecure();
+        $httpOnly = $this->getSettings()->getSessionCookieHttpOnly();
 
-        // attach the session to the manager and return it
-        return $this->attach($session);
+        // initialize and return the session instance
+        $session = new Session($id, $sessionName, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
+
+        // attach the session
+        $this->attach($session);
+
+        // return the session
+        return $session;
     }
 
     /**
@@ -176,12 +123,11 @@ class StandardSessionManager extends GenericStackable implements SessionManager
      *
      * @param \TechDivision\Servlet\Http\HttpSession $session The session to attach
      *
-     * @return \TechDivision\Servlet\Http\HttpSession The attached session
+     * @return void
      */
     public function attach(HttpSession $session)
     {
-        $this->sessions[] = $session;
-        return $session;
+        $this->sessions->set($session->getId(), $session);
     }
 
     /**
@@ -191,25 +137,55 @@ class StandardSessionManager extends GenericStackable implements SessionManager
      * precedence. If no session id is found, a new one is created and assigned
      * to the request.
      *
-     * @param string|null $id          The ID of the session to find
-     * @param string|null $sessionName The name of the requested session
-     * @param boolean     $create      If TRUE, a new session will be created if the session with the passed ID can't be found
+     * @param string $id The unique session ID to that has to be returned
      *
      * @return \TechDivision\Servlet\HttpSession The requested session
      */
-    public function find($id = null, $sessionName = null, $create = false)
+    public function find($id)
+    {
+        // try to load the session with the passed ID
+        if ($this->sessions->has($id)) {
+            return $this->sessions->get($id);
+        }
+    }
+
+    /**
+     * Collects the session garbage.
+     *
+     * @return void
+     */
+    public function collectGarbage()
+    {
+        // some other values
+        $collectionProbability = $this->getSettings()->getGarbageCollectionProbability();
+        $inactivityTimeout = $this->getSettings()->getInactivityTimeout();
+
+        // iterate over all session and collect the session garbage
+        foreach ($this->sessions as $session) {
+            // do collect garbage here
+        }
+    }
+
+    /**
+     * Creates a random string with the passed length.
+     *
+     * @param integer $length The string lenght to generate
+     *
+     * @return string The random string
+     */
+    public function generateRandomString($length = 32)
     {
 
-        // try to load the session with the passed ID
-        foreach ($this->getSessions() as $session) {
-            if ($session instanceof HttpSession && $session->isStarted() && $session->getId() === $id) {
-                return $session;
-            }
+        // prepare an array with the chars used to create a random string
+        $letters = str_split('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz');
+
+        // create and return the random string
+        $bytes = '';
+        foreach (range(1, $length) as $i) {
+            $bytes = $letters[mt_rand(0, sizeof($letters) - 1)] . $bytes;
         }
 
-        // create a new session with the requested session ID if requested
-        if ($create === true) {
-            return $this->create($id, $sessionName);
-        }
+        // return the unique ID
+        return $bytes;
     }
 }

@@ -23,6 +23,7 @@ namespace TechDivision\ServletEngine;
 
 use TechDivision\Servlet\ServletRequest;
 use TechDivision\Servlet\Http\HttpSession;
+use TechDivision\Servlet\Http\HttpServletRequest;
 
 /**
  * Interface for the session managers.
@@ -36,16 +37,17 @@ use TechDivision\Servlet\Http\HttpSession;
  */
 interface SessionManager
 {
-    
+
     /**
      * Creates a new session with the passed session ID and session name if give.
      *
-     * @param string $id The session ID used to create the session
+     * @param string $id          The unique session ID to use
+     * @param string $sessionName The name of the session to use
      *
      * @return \TechDivision\Servlet\HttpSession The requested session
      */
-    public function create($id);
-    
+    public function create($id, $sessionName);
+
     /**
      * Attachs the passed session to the manager and returns the instance. If a session
      * with the session identifier already exists, it will be overwritten.
@@ -63,17 +65,23 @@ interface SessionManager
      * precedence. If no session id is found, a new one is created and assigned
      * to the request.
      *
-     * @param string  $id     The ID of the session to find
-     * @param boolean $create If TRUE, a new session will be created if the session with the passed ID can't be found
+     * @param string $id The unique session ID to that has to be returned
      *
      * @return \TechDivision\Servlet\HttpSession The requested session
      */
-    public function find($id, $create = false);
-    
+    public function find($id);
+
     /**
      * Returns all sessions actually attached to the session manager.
      *
      * @return array The array with sessions
      */
     public function getSessions();
+
+    /**
+     * Collects the session garbage.
+     *
+     * @return void
+     */
+    public function collectGarbage();
 }

@@ -22,6 +22,7 @@
 
 namespace TechDivision\ServletEngine\Http;
 
+use TechDivision\Storage\GenericStackable;
 use TechDivision\Storage\StorageInterface;
 use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpSession;
@@ -54,7 +55,7 @@ use TechDivision\ServletEngine\InvalidArgumentException;
  * @license    http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link       http://www.appserver.io
  */
-class Session implements HttpSession
+class Session extends GenericStackable implements HttpSession
 {
 
     /**
@@ -63,122 +64,6 @@ class Session implements HttpSession
      * @var string
      */
     const TAG_PREFIX = 'customtag-';
-
-    /**
-     * The session cookie instance.
-     *
-     * @var \TechDivision\Servlet\Http\Cookie
-     */
-    protected $sessionCookie;
-
-    /**
-     * The servlet request instance.
-     *
-     * @var \TechDivision\Servlet\Http\HttpServletRequest
-     */
-    protected $request;
-
-    /**
-     * The servlet response instance.
-     *
-     * @var \TechDivision\Servlet\Http\HttpServletResponse
-     */
-    protected $response;
-
-    /**
-     * Cache storage for this session.
-     *
-     * @var \TechDivision\ServletEngine\SessionStorage
-     */
-    protected $storage;
-
-    /**
-     * The session identifier
-     *
-     * @var string
-     */
-    protected $id;
-
-    /**
-     * If this session has been started
-     *
-     * @var boolean
-     */
-    protected $started = false;
-
-    /**
-     *
-     * @var integer
-     */
-    protected $lastActivityTimestamp;
-
-    /**
-     *
-     * @var array
-     */
-    protected $tags = array();
-
-    /**
-     *
-     * @var integer
-     */
-    protected $now;
-
-    /**
-     * The session name to use.
-     *
-     * @var string
-     */
-    protected $sessionName = DefaultSessionSettings::DEFAULT_SESSION_NAME;
-
-    /**
-     * The cookie domain set for the session.
-     *
-     * @var string
-     */
-    protected $sessionCookieDomain = Cookie::LOCALHOST;
-
-    /**
-     * The cookie path set for the session.
-     *
-     * @var string
-     */
-    protected $sessionCookiePath = DefaultSessionSettings::DEFAULT_SESSION_COOKIE_PATH;
-
-    /**
-     * The session cookie lifetime.
-     *
-     * @var integer
-     */
-    protected $sessionCookieLifetime = 0;
-
-    /**
-     * The flag that the session cookie should only be set in a secure connection.
-     *
-     * @var boolean
-     */
-    protected $sessionCookieSecure = false;
-
-    /**
-     * The flag if the session should set a Http only cookie.
-     *
-     * @var boolean
-     */
-    protected $sessionCookieHttpOnly = false;
-
-    /**
-     * The probability the garbage collector will be invoked on the session.
-     *
-     * @var float
-     */
-    protected $garbageCollectionProbability = 1.0;
-
-    /**
-     * The inactivity timeout until the session will be invalidated.
-     *
-     * @var integer
-     */
-    protected $inactivityTimeout = 1440;
 
     /**
      * Constructs this session
@@ -196,11 +81,108 @@ class Session implements HttpSession
      */
     public function __construct($id = null, $lastActivityTimestamp = null, array $tags = array())
     {
+
+        /**
+         * The session cookie instance.
+         * @var \TechDivision\Servlet\Http\Cookie
+         */
+        $this->sessionCookie;
+
+        /**
+         * The servlet request instance.
+         * @var \TechDivision\Servlet\Http\HttpServletRequest
+         */
+        $this->request;
+
+        /**
+         * The servlet response instance.
+         * @var \TechDivision\Servlet\Http\HttpServletResponse
+         */
+        $this->response;
+
+        /**
+         * Cache storage for this session.
+         * @var \TechDivision\ServletEngine\SessionStorage
+         */
+        $this->storage;
+
+        /**
+         * The unique session identifier.
+         * @var string
+         */
         $this->id = $id;
+
+        /**
+         * If this session has been started.
+         * @var boolean
+         */
+        $this->started = false;
+
+        /**
+         * Timestamp with the last session activity.
+         * @var integer
+         */
         $this->lastActivityTimestamp = $lastActivityTimestamp;
+
+        /**
+         * Array with the session tags.
+         * @var array
+         */
         $this->tags = $tags;
+
+        /**
+         * Timestamp with the actual date.
+         * @var integer
+         */
         $this->now = time();
-        $this->sessionCookieLifetime = time() + 86400;
+
+        /**
+         * The session name to use.
+         * @var string
+         */
+        $this->sessionName = DefaultSessionSettings::DEFAULT_SESSION_NAME;
+
+        /**
+         * The cookie path set for the session.
+         * @var string
+         */
+        $this->sessionCookiePath = DefaultSessionSettings::DEFAULT_SESSION_COOKIE_PATH;
+
+        /**
+         * The cookie domain set for the session.
+         * @var string
+         */
+        $this->sessionCookieDomain = Cookie::LOCALHOST;
+
+        /**
+         * The session cookie lifetime.
+         * @var integer
+         */
+        $this->sessionCookieLifetime =  time() + 86400;
+
+        /**
+         * The flag that the session cookie should only be set in a secure connection.
+         * @var boolean
+         */
+        $this->sessionCookieSecure = false;
+
+        /**
+         * The flag if the session should set a Http only cookie.
+         * @var boolean
+         */
+        $sessionCookieHttpOnly = false;
+
+        /**
+         * The probability the garbage collector will be invoked on the session.
+         * @var float
+         */
+        $this->garbageCollectionProbability = 1.0;
+
+        /**
+         * The inactivity timeout until the session will be invalidated.
+         * @var integer
+         */
+        $this->inactivityTimeout = 1440;
     }
 
     /**

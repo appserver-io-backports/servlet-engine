@@ -26,6 +26,7 @@ use TechDivision\Storage\StorageInterface;
 use TechDivision\ServletEngine\Http\Session;
 use TechDivision\ServletEngine\SessionSettings;
 use TechDivision\Storage\StackableStorage;
+use TechDivision\Storage\GenericStackable;
 
 /**
  * A standard session manager implementation that provides session
@@ -38,13 +39,40 @@ use TechDivision\Storage\StackableStorage;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class StandardSessionManager extends StackableStorage implements SessionManager
+class StandardSessionManager extends GenericStackable implements SessionManager
 {
+
+    /**
+     *Initializes the internal member variables.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+
+        /**
+         * The session settings.
+         * @var \TechDivision\ServletEngine\Settings
+         */
+        $this->settings;
+
+        /**
+         * Cache storage for this session.
+         * @var \TechDivision\Storage\StorageInterface
+         */
+        $this->storage;
+
+        /**
+         * Array to store the sessions that has already been initilized in this request.
+         * @var \TechDivision\Storage\StorageInterface
+         */
+        $this->sessions;
+    }
 
     /**
      * Injects the session storage to persist the sessions.
      *
-     * @param \TechDivision\Storage\StorageInterface $storage The session storage to use
+     * @param \TechDivision\Storage\StorageInterface $sessions The session storage to use
      *
      * @return void
      */

@@ -375,7 +375,7 @@ class Request implements HttpServletRequest
         $session = $manager->find($this->getRequestedSessionId());
 
         // if no session has been found or created we return immediately
-        if ($session == null) {
+        if ($session == null && $create === true) {
 
             // try to load the requested session ID
             $id = $this->getRequestedSessionId();

@@ -45,33 +45,6 @@ class StandardSessionManager extends GenericStackable implements SessionManager
 {
 
     /**
-     *Initializes the internal member variables.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-
-        /**
-         * The session settings.
-         * @var \TechDivision\ServletEngine\Settings
-         */
-        $this->settings;
-
-        /**
-         * Cache storage for this session.
-         * @var \TechDivision\Storage\StorageInterface
-         */
-        $this->storage;
-
-        /**
-         * Array to store the sessions that has already been initilized in this request.
-         * @var \TechDivision\Storage\StorageInterface
-         */
-        $this->sessions;
-    }
-
-    /**
      * Injects the session storage to persist the sessions.
      *
      * @param \TechDivision\Storage\StorageInterface $sessions The session storage to use
@@ -81,18 +54,6 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     public function injectSessions(StorageInterface $sessions)
     {
         $this->sessions = $sessions;
-    }
-
-    /**
-     * Injects the storage to persist session data.
-     *
-     * @param \TechDivision\Storage\StorageInterface $storage The session storage to use
-     *
-     * @return void
-     */
-    public function injectStorage(StorageInterface $storage)
-    {
-        $this->storage = $storage;
     }
 
     /**
@@ -115,16 +76,6 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     public function getSessions()
     {
         return $this->sessions;
-    }
-
-    /**
-     * Returns all sessions actually attached to the session manager.
-     *
-     * @return \TechDivision\Storage\StorageInterface The container with sessions
-     */
-    public function getStorage()
-    {
-        return $this->storage;
     }
 
     /**
@@ -176,7 +127,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
      */
     public function attach(HttpSession $session)
     {
-        $this->sessions[$session->getId()] = $session;
+        $this->sessions->set($session->getId(), $session);
     }
 
     /**
@@ -193,8 +144,8 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     public function find($id)
     {
         // try to load the session with the passed ID
-        if (isset($this->sessions[$id])) {
-            return $this->sessions[$id];
+        if ($this->sessions->has($id)) {
+            return $this->sessions->get($id);
         }
     }
 

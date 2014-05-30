@@ -114,7 +114,7 @@ class Session extends GenericStackable implements HttpSession
     /**
      * Creates and returns the session cookie to be added to the response.
      *
-     * @param \TechDivision\Servlet\Http\ServletResponse The response that will be sent back to the client
+     * @param \TechDivision\Servlet\Http\ServletResponse $response The response that will be sent back to the client
      *
      * @return void
      */

@@ -25,6 +25,7 @@ use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Storage\StorageInterface;
 use TechDivision\ServletEngine\Http\Session;
 use TechDivision\ServletEngine\SessionSettings;
+use TechDivision\Storage\StackableStorage;
 
 /**
  * A standard session manager implementation that provides session
@@ -37,49 +38,19 @@ use TechDivision\ServletEngine\SessionSettings;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class StandardSessionManager implements SessionManager
+class StandardSessionManager extends StackableStorage implements SessionManager
 {
 
     /**
-     * The session settings.
+     * Injects the session storage to persist the sessions.
      *
-     * @var \TechDivision\ServletEngine\Settings
-     */
-    protected $settings;
-
-    /**
-     * Cache storage for this session.
-     *
-     * @var \TechDivision\Storage\StorageInterface
-     */
-    protected $storage;
-
-    /**
-     * Array to store the sessions that has already been initilized in this request.
-     *
-     * @var \SplObjectStorage()
-     */
-    protected $sessions;
-
-    /**
-     * Initialize the session manager.
-     *
-     */
-    public function __construct()
-    {
-        $this->sessions = new \SplObjectStorage();
-    }
-
-    /**
-     * Injects the settings
-     *
-     * @param \TechDivision\ServletEngine\SessionSettings $settings Settings for the session handling
+     * @param \TechDivision\Storage\StorageInterface $storage The session storage to use
      *
      * @return void
      */
-    public function injectSettings(SessionSettings $settings)
+    public function injectSessions(StorageInterface $sessions)
     {
-        $this->settings = $settings;
+        $this->sessions = $sessions;
     }
 
     /**
@@ -95,6 +66,48 @@ class StandardSessionManager implements SessionManager
     }
 
     /**
+     * Injects the settings
+     *
+     * @param \TechDivision\ServletEngine\SessionSettings $settings Settings for the session handling
+     *
+     * @return void
+     */
+    public function injectSettings(SessionSettings $settings)
+    {
+        $this->settings = $settings;
+    }
+
+    /**
+     * Returns all sessions actually attached to the session manager.
+     *
+     * @return \TechDivision\Storage\StorageInterface The container with sessions
+     */
+    public function getSessions()
+    {
+        return $this->sessions;
+    }
+
+    /**
+     * Returns all sessions actually attached to the session manager.
+     *
+     * @return \TechDivision\Storage\StorageInterface The container with sessions
+     */
+    public function getStorage()
+    {
+        return $this->storage;
+    }
+
+    /**
+     * Returns the session settings.
+     *
+     * @return \TechDivision\ServletEngine\SessionSettings The session settings
+     */
+    public function getSettings()
+    {
+        return $this->settings;
+    }
+
+    /**
      * Creates a new session with the passed session ID and session name if give.
      *
      * @param string|null $id          The session ID used to create the session
@@ -104,9 +117,10 @@ class StandardSessionManager implements SessionManager
      */
     public function create($id = null, $sessionName = null)
     {
+
         // initialize and return the session instance
         $session = new Session($id, time());
-        $session->injectStorage($this->storage);
+        $session->injectStorage($this->getStorage());
 
         // check if a session name has been specified
         if ($sessionName == null) { // if not, set the default session name
@@ -125,8 +139,7 @@ class StandardSessionManager implements SessionManager
         $session->setInactivityTimeout($this->getSettings()->getInactivityTimeout());
 
         // attach the session to the manager and return it
-        $this->attach($session);
-        return $session;
+        return $this->attach($session);
     }
 
     /**
@@ -139,7 +152,7 @@ class StandardSessionManager implements SessionManager
      */
     public function attach(HttpSession $session)
     {
-        $this->sessions->attach($session);
+        $this->sessions[] = $session;
         return $session;
     }
 
@@ -160,8 +173,8 @@ class StandardSessionManager implements SessionManager
     {
 
         // try to load the session with the passed ID
-        foreach ($this->sessions as $session) {
-            if ($session->getId() === $id) {
+        foreach ($this->getSessions() as $session) {
+            if ($session instanceof HttpSession && $session->isStarted() && $session->getId() === $id) {
                 return $session;
             }
         }
@@ -170,25 +183,5 @@ class StandardSessionManager implements SessionManager
         if ($create === true) {
             return $this->create($id, $sessionName);
         }
-    }
-
-    /**
-     * Returns all sessions actually attached to the session manager.
-     *
-     * @return \SplObjectStoreage The container with sessions
-     */
-    public function getSessions()
-    {
-        return $this->sessions;
-    }
-
-    /**
-     * Returns the session settings.
-     *
-     * @return \TechDivision\ServletEngine\SessionSettings The session settings
-     */
-    public function getSettings()
-    {
-        return $this->settings;
     }
 }

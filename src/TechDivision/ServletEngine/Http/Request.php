@@ -95,13 +95,6 @@ class Request implements HttpServletRequest
     protected $httpRequest;
 
     /**
-     * The servlet session related with the requested session ID.
-     *
-     * @var \TechDivision\ServletEngine\ServletSession
-     */
-    protected $session;
-
-    /**
      * The response instance bound to this request.
      *
      * @var \TechDivision\Servlet\Http\HttpServletResponse
@@ -360,21 +353,6 @@ class Request implements HttpServletRequest
     public function getSession($create = false)
     {
 
-        // try to load an already initialized session
-        if ($this->session != null) {
-
-            // first check if the session has been started
-            if ($this->session->isStarted() === false) { // start it, if not
-                $this->session->start();
-            }
-
-            // check if session ID/name equals
-            if ($this->session->getId() === $this->getRequestedSessionId() &&
-                $this->session->getSessionName() === $this->getRequestedSessionName()) {
-                return $this->session;
-            }
-        }
-
         // if no session has already been load, initialize the session manager
         $manager = $this->getContext()->getSessionManager();
 
@@ -402,12 +380,11 @@ class Request implements HttpServletRequest
         }
 
         // inject request/response and start it
-        $this->session = $session;
-        $this->session->injectRequest($this);
-        $this->session->injectResponse($this->getResponse());
+        $session->injectRequest($this);
+        $session->injectResponse($this->getResponse());
 
         // return the found session
-        return $this->session;
+        return $session;
     }
 
     /**

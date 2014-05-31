@@ -21,14 +21,15 @@
 
 namespace TechDivision\ServletEngine;
 
+use TechDivision\Servlet\ServletSession;
+use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Servlet\Http\HttpServletRequest;
-use TechDivision\Storage\StorageInterface;
 use TechDivision\ServletEngine\Http\Session;
 use TechDivision\ServletEngine\SessionSettings;
+use TechDivision\Storage\StorageInterface;
 use TechDivision\Storage\StackableStorage;
 use TechDivision\Storage\GenericStackable;
-use TechDivision\Servlet\Http\Cookie;
 
 /**
  * A standard session manager implementation that provides session
@@ -121,13 +122,13 @@ class StandardSessionManager extends GenericStackable implements SessionManager
      * Attachs the passed session to the manager and returns the instance. If a session
      * with the session identifier already exists, it will be overwritten.
      *
-     * @param \TechDivision\Servlet\Http\HttpSession $session The session to attach
+     * @param \TechDivision\Servlet\ServletSession $session The session to attach
      *
      * @return void
      */
-    public function attach(HttpSession $session)
+    public function attach(ServletSession $session)
     {
-        $this->sessions->set($session->getId(), $session);
+        $this->getSessions()->set($session->getId(), $session);
     }
 
     /**
@@ -144,26 +145,72 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     public function find($id)
     {
         // try to load the session with the passed ID
-        if ($this->sessions->has($id)) {
-            return $this->sessions->get($id);
+        if ($this->getSessions()->has($id)) {
+            // load the session with the passed ID
+            $session = $this->getSessions()->get($id);
+            // if we find a session, we've to check if it can be resumed
+            if ($session->canBeResumed()) {
+                $session->resume();
+                return $session;
+            }
         }
     }
 
     /**
      * Collects the session garbage.
      *
-     * @return void
+     * @return integer The number of expired and removed sessions
      */
     public function collectGarbage()
     {
-        // some other values
-        $collectionProbability = $this->getSettings()->getGarbageCollectionProbability();
-        $inactivityTimeout = $this->getSettings()->getInactivityTimeout();
 
-        // iterate over all session and collect the session garbage
-        foreach ($this->sessions as $session) {
-            // do collect garbage here
+        // counter to store the number of removed sessions
+        $sessionRemovalCount = 0;
+
+        // the probaility that we want to collect the garbage (float <= 1.0)
+        $garbageCollectionProbability = $this->getSettings()->getGarbageCollectionProbability();
+
+        // calculate if the want to collect the garbage now
+        $decimals = strlen(strrchr($garbageCollectionProbability, '.')) - 1;
+        $factor = ($decimals > - 1) ? $decimals * 10 : 1;
+
+        // if we can to collect the garbage, start collecting now
+        if (rand(0, 100 * $factor) <= ($garbageCollectionProbability * $factor)) {
+
+            // we want to know what inactivity timeout we've to check the sessions for
+            $inactivityTimeout = $this->getSettings()->getInactivityTimeout();
+
+            // iterate over all session and collect the session garbage
+            if ($inactivityTimeout !== 0) {
+
+                // iterate over all sessions and remove the expired ones
+                foreach ($this->getSessions() as $session) {
+
+                    // check if we've a session instance
+                    if ($session instanceof ServletSession) {
+
+                        // load the sessions last activity timestamp
+                        $lastActivitySecondsAgo = time() - $session->getLastActivityTimestamp();
+
+                        // if session has been expired, destroy and remove it
+                        if ($lastActivitySecondsAgo > $inactivityTimeout) {
+
+                            // first we've to remove the session from the manager
+                            $this->getSessions()->remove($session->getId());
+
+                            // then we destroy the instance itself
+                            $session->destroy(sprintf('Session %s was inactive for %s seconds, more than the configured timeout of %s seconds.', $session->getId(), $lastActivitySecondsAgo, $inactivityTimeout));
+
+                            // raise the counter of expired session
+                            $sessionRemovalCount++;
+                        }
+                    }
+                }
+            }
         }
+
+        // return the number of expired and removed sessions
+        return $sessionRemovalCount;
     }
 
     /**

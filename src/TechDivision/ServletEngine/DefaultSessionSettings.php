@@ -65,7 +65,7 @@ class DefaultSessionSettings implements SessionSettings
      *
      * @var integer
      */
-    protected $sessionMaxiumAge = 0;
+    protected $sessionMaximumAge = 0;
 
     /**
      * The cookie domain set for the session.
@@ -100,7 +100,7 @@ class DefaultSessionSettings implements SessionSettings
      *
      * @var float
      */
-    protected $garbageCollectionProbability = 1.0;
+    protected $garbageCollectionProbability = 0.1;
 
     /**
      * The inactivity timeout until the session will be invalidated.

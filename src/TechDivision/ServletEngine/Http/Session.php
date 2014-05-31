@@ -22,10 +22,11 @@
 
 namespace TechDivision\ServletEngine\Http;
 
-use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Storage\StackableStorage;
 use TechDivision\Storage\GenericStackable;
+use TechDivision\Servlet\ServletSession;
 use TechDivision\Servlet\Http\Cookie;
+use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Servlet\Http\HttpServletResponse;
 
 /**
@@ -47,7 +48,7 @@ use TechDivision\Servlet\Http\HttpServletResponse;
  * @license    http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link       http://www.appserver.io
  */
-class Session extends GenericStackable implements HttpSession
+class Session extends GenericStackable implements ServletSession
 {
 
     /**
@@ -67,6 +68,9 @@ class Session extends GenericStackable implements HttpSession
     public function __construct($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly)
     {
 
+        // set the session status flag
+        $this->started = false;
+
         // initialize the session
         $this->id = $id;
         $this->name = $name;
@@ -77,11 +81,21 @@ class Session extends GenericStackable implements HttpSession
         $this->secure = $secure;
         $this->httpOnly = $httpOnly;
 
-        // session has not been started yed
-        $this->started = false;
+        // the UNIX timestamp where the last action on this session happens
+        $this->lastActivityTimestamp = time();
 
         // initialize the storage for the session data
         $this->data = new StackableStorage();
+    }
+
+    /**
+     * Starts the session, if it has not been already started
+     *
+     * @return void
+     */
+    public function start()
+    {
+        $this->started = true;
     }
 
     /**
@@ -95,90 +109,23 @@ class Session extends GenericStackable implements HttpSession
     }
 
     /**
-     * Starts the session, if it has not been already started
+     * Returns the unix time stamp marking the last point in time this session has
+     * been in use.
      *
-     * @return void
+     * For the current (local) session, this method will always return the current
+     * time. For a remote session, the unix timestamp will be returned.
+     *
+     * @return integer UNIX timestamp
      */
-    public function start()
+    public function getLastActivityTimestamp()
     {
-
-        // do nothing if the session has already been started
-        if ($this->isStarted()) {
-            return;
-        }
-
-        // set the session started
-        $this->started = true;
-    }
-
-    /**
-     * Creates and returns the session cookie to be added to the response.
-     *
-     * @param \TechDivision\Servlet\Http\ServletResponse $response The response that will be sent back to the client
-     *
-     * @return void
-     */
-    public function processResponse(HttpServletResponse $response)
-    {
-
-        // we need the session to be started
-        if ($this->isStarted() === false) {
-            return;
-        }
-
-        // someone else has already added the cookie
-        if ($response->hasCookie($this->name)) {
-            return;
-        }
-
-        // create a new cookie with the session values
-        $cookie = new Cookie(
-            $this->name,
-            $this->id,
-            $this->lifetime,
-            $this->maximumAge,
-            $this->domain,
-            $this->path,
-            $this->secure,
-            $this->httpOnly
-        );
-
-        // add the cookie to the response
-        $response->addCookie($cookie);
-    }
-
-    /**
-     * Returns TRUE if there is a session that can be resumed.
-     *
-     * If a to-be-resumed session was inactive for too long, this function will
-     * trigger the expiration of that session. An expired session cannot be resumed.
-     *
-     * NOTE that this method does a bit more than the name implies: Because the
-     * session info data needs to be loaded, this method stores this data already
-     * so it doesn't have to be loaded again once the session is being used.
-     *
-     * @return boolean
-     */
-    public function canBeResumed()
-    {
-        throw new \Exception(__METHOD__ . ' not implemented yet');
-    }
-
-    /**
-     * Resumes an existing session, if any.
-     *
-     * @return integer If a session was resumed, the inactivity of since the last request is returned
-     */
-    public function resume()
-    {
-        throw new \Exception(__METHOD__ . ' not implemented yet');
+        return $this->lastActivityTimestamp;
     }
 
     /**
      * Returns the current session identifier
      *
      * @return string The current session identifier
-     * @throws \TechDivision\Servlet\IllegalStateException
      */
     public function getId()
     {
@@ -186,15 +133,73 @@ class Session extends GenericStackable implements HttpSession
     }
 
     /**
-     * Generates and propagates a new session ID and transfers all existing data
-     * to the new session.
+     * Returns the session name.
      *
-     * @return string The new session ID
-     * @throws \TechDivision\Servlet\IllegalStateException
+     * @return string The session name
      */
-    public function renewId()
+    public function getName()
     {
-        throw new \Exception(__METHOD__ . ' not implemented yet');
+        return $this->name;
+    }
+
+    /**
+     * Returns date and time after the session expires.
+     *
+     * @return integer|DateTime The date and time after the session expires
+     */
+    public function getLifetime()
+    {
+        return $this->lifetime;
+    }
+
+    /**
+     * Returns the number of seconds until the session expires.
+     *
+     * @return integer|null Number of seconds until the session expires
+     */
+    public function getMaximumAge()
+    {
+        return $this->maximumAge;
+    }
+
+    /**
+     * Returns the host to which the user agent will send this cookie.
+     *
+     * @return string|null The host to which the user agent will send this cookie
+     */
+    public function getDomain()
+    {
+        return $this->domain;
+    }
+
+    /**
+     * Returns the path describing the scope of this cookie.
+     *
+     * @return string The path describing the scope of this cookie
+     */
+    public function getPath()
+    {
+        return $this->path;
+    }
+
+    /**
+     * Returns if this session should only be sent through a "secure" channel by the user agent.
+     *
+     * @return boolean TRUE if the session should only be sent through a "secure" channel, else FALSE
+     */
+    public function isSecure()
+    {
+        return $this->secure;
+    }
+
+    /**
+     * Returns if this session should only be used through the HTTP protocol.
+     *
+     * @return boolean TRUE if the session should only be used through the HTTP protocol
+     */
+    public function isHttpOnly()
+    {
+        return $this->httpOnly;
     }
 
     /**
@@ -203,7 +208,6 @@ class Session extends GenericStackable implements HttpSession
      * @param string $key An identifier for the content stored in the session.
      *
      * @return mixed The contents associated with the given key
-     * @throws \TechDivision\Servlet\IllegalStateException
      */
     public function getData($key)
     {
@@ -216,7 +220,6 @@ class Session extends GenericStackable implements HttpSession
      * @param string $key Entry identifier of the session data
      *
      * @return boolean
-     * @throws \TechDivision\Servlet\IllegalStateException
      */
     public function hasKey($key)
     {
@@ -230,25 +233,10 @@ class Session extends GenericStackable implements HttpSession
      * @param mixed  $data The data to be stored
      *
      * @return void
-     * @throws \TechDivision\Servlet\IllegalStateException
      */
     public function putData($key, $data)
     {
         $this->data->set($key, $data);
-    }
-
-    /**
-     * Returns the unix time stamp marking the last point in time this session has
-     * been in use.
-     *
-     * For the current (local) session, this method will always return the current
-     * time. For a remote session, the unix timestamp will be returned.
-     *
-     * @return integer UNIX timestamp
-     * @throws \TechDivision\Servlet\IllegalStateException
-     */
-    public function getLastActivityTimestamp()
-    {
     }
 
     /**
@@ -260,7 +248,6 @@ class Session extends GenericStackable implements HttpSession
      * @param string $tag The tag – must match be a valid cache frontend tag
      *
      * @return void
-     * @throws \TechDivision\Servlet\IllegalStateException
      */
     public function addTag($tag)
     {
@@ -273,7 +260,6 @@ class Session extends GenericStackable implements HttpSession
      * @param string $tag The tag – must match be a valid cache frontend tag
      *
      * @return void
-     * @throws \TechDivision\Servlet\IllegalStateException
      */
     public function removeTag($tag)
     {
@@ -283,7 +269,6 @@ class Session extends GenericStackable implements HttpSession
      * Returns the tags this session has been tagged with.
      *
      * @return array The tags or an empty array if there aren't any
-     * @throws \TechDivision\Servlet\IllegalStateException
      */
     public function getTags()
     {
@@ -291,47 +276,63 @@ class Session extends GenericStackable implements HttpSession
     }
 
     /**
-     * Shuts down this session
+     * Returns TRUE if there is a session that can be resumed.
      *
-     * This method must not be called manually – it is invoked by Flow's object
-     * management.
+     * If a to-be-resumed session was inactive for too long, this function will
+     * trigger the expiration of that session. An expired session cannot be resumed.
      *
-     * @return void
+     * NOTE that this method does a bit more than the name implies: Because the
+     * session info data needs to be loaded, this method stores this data already
+     * so it doesn't have to be loaded again once the session is being used.
+     *
+     * @return boolean TRUE if the session can be resumed, else FALSE
      */
-    public function shutdownObject()
+    public function canBeResumed()
     {
-        throw new \Exception(__METHOD__ . ' not implemented yet');
+        return !$this->autoExpire();
     }
 
     /**
-     * Explicitly writes and closes the session
+     * Resumes an existing session, if any.
      *
-     * @return void
+     * @return integer If a session was resumed, the inactivity of since the last request is returned
      */
-    public function close()
+    public function resume()
     {
-        throw new \Exception(__METHOD__ . ' not implemented yet');
+        if ($this->canBeResumed()) {
+            $lastActivitySecondsAgo = (time() - $this->getLastActivityTimestamp());
+            $this->lastActivityTimestamp = time();
+            return $lastActivitySecondsAgo;
+        }
     }
 
     /**
-     * Explicitly destroys all session data
+     * Explicitly destroys all session data.
+     *
+     * @param string $reason The reason why the session has been destroyed
      *
      * @return void
-     * @throws \TechDivision\Servlet\IllegalStateException
      */
-    public function destroy()
+    public function destroy($reason)
     {
-        throw new \Exception(__METHOD__ . ' not implemented yet');
+        $this->id = null;
+        $this->lastActivityTimestamp = 0;
+        $this->maximumAge = -1;
     }
 
     /**
-     * Iterates over all existing sessions and removes their data if the inactivity
-     * timeout was reached.
+     * Automatically expires the session if the user has been inactive for too long.
      *
-     * @return void
+     * @return boolean TRUE if the session expired, FALSE if not
      */
-    public function collectGarbage()
+    protected function autoExpire()
     {
-        throw new \Exception(__METHOD__ . ' not implemented yet');
+        $lastActivitySecondsAgo = time() - $this->getLastActivityTimestamp();
+        $expired = false;
+        if ($this->getMaximumAge() !== 0 && $lastActivitySecondsAgo > $this->getMaximumAge()) {
+            $this->destroy(sprintf('Session %s was inactive for %s seconds, more than the configured timeout of %s seconds.', $this->getId(), $lastActivitySecondsAgo, $this->getMaximumAge()));
+            $expired = true;
+        }
+        return $expired;
     }
 }

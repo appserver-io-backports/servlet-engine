@@ -54,14 +54,7 @@ class SessionValve implements Valve
         // if no session has already been load, initialize the session manager
         $manager = $servletRequest->getContext()->getSessionManager();
 
-        // first run the garbage collector
+        //  run the garbage collector to remove expired sessions
         $manager->collectGarbage();
-
-        // add the session cookies to the response
-        foreach ($manager->getSessions() as $session) {
-            if ($session instanceof HttpSession) {
-                $session->processResponse($servletResponse);
-            }
-        }
     }
 }

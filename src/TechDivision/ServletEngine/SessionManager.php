@@ -22,6 +22,7 @@
 namespace TechDivision\ServletEngine;
 
 use TechDivision\Servlet\ServletRequest;
+use TechDivision\Servlet\ServletSession;
 use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Servlet\Http\HttpServletRequest;
 
@@ -52,11 +53,11 @@ interface SessionManager
      * Attachs the passed session to the manager and returns the instance. If a session
      * with the session identifier already exists, it will be overwritten.
      *
-     * @param \TechDivision\Servlet\Http\HttpSession $session The session to attach
+     * @param \TechDivision\Servlet\ServletSession $session The session to attach
      *
-     * @return \TechDivision\Servlet\Http\HttpSession The attached session
+     * @return void
      */
-    public function attach(HttpSession $session);
+    public function attach(ServletSession $session);
 
     /**
      * Tries to find a session for the given request. The session id will be
@@ -81,7 +82,7 @@ interface SessionManager
     /**
      * Collects the session garbage.
      *
-     * @return void
+     * @return integer The number of removed sessions
      */
     public function collectGarbage();
 }

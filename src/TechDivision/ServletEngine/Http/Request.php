@@ -25,10 +25,12 @@ namespace TechDivision\ServletEngine\Http;
 use TechDivision\Context\Context;
 use TechDivision\Http\HttpRequestInterface;
 use TechDivision\Servlet\Http\Cookie;
+use TechDivision\Servlet\Http\HttpSessionWrapper;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Servlet\Http\HttpServletResponse;
 use TechDivision\Server\Dictionaries\ServerVars;
 use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
+use TechDivision\Servlet\Http\HttpSession;
 
 /**
  * A Http servlet request implementation.
@@ -366,39 +368,44 @@ class Request implements HttpServletRequest
             $this->setRequestedSessionName($manager->getSettings()->getSessionName());
         }
 
-        // load session cookie and set session ID
-        if (($cookie = $this->getCookie($this->getRequestedSessionName())) != null) {
+        // load the requested session ID and name
+        $sessionName = $this->getRequestedSessionName();
+        $id = $this->getRequestedSessionId();
+
+        // try to load session ID from session cookie of request/response
+        if ($id == null && ($cookie = $this->getResponse()->getCookie($sessionName)) != null) {
+            $this->setRequestedSessionId($cookie->getValue());
+        } elseif ($id == null && ($cookie = $this->getCookie($sessionName)) != null) {
             $this->setRequestedSessionId($cookie->getValue());
         }
 
         // find or create a new session (if flag has been set)
         $session = $manager->find($this->getRequestedSessionId());
 
-        // if no session has been found or created we return immediately
+        // if we can't find a session or session has been expired and we want to create a new one
         if ($session == null && $create === true) {
-
-            // try to load the requested session ID
-            $id = $this->getRequestedSessionId();
 
             // check if a session ID has been specified
             if ($id == null) { // if not, generate a unique one
                 $id = $manager->generateRandomString();
             }
 
-            // try to load the requested session name
-            $sessionName = $this->getRequestedSessionName();
-
-            // check if a session name has been specified
-            if ($sessionName == null) { // if not, set the default session name
-                $sessionName = $this->getSettings()->getSessionName();
-            }
-
-            // create a new session
+            // create a new session and register ID in request
             $session = $manager->create($id, $sessionName);
         }
 
+        // if we can't find a session nor we've created one, so we return nothing!
+        if ($session == null) {
+            return;
+        }
+
+        // initialize the session wrapper
+        $wrapper = new HttpSessionWrapper();
+        $wrapper->injectSession($session);
+        $wrapper->injectRequest($this);
+
         // return the found session
-        return $session;
+        return $wrapper;
     }
 
     /**

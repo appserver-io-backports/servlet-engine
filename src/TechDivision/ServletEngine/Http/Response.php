@@ -46,14 +46,14 @@ class Response implements HttpServletResponse
      * @var array
      */
     protected $cookies = array();
-    
+
     /**
      * The Http response instance.
      *
      * @var \TechDivision\Http\HttpResponseInteface
      */
     protected $httpResponse;
-    
+
     /**
      * Injects the Http response instance.
      *
@@ -66,7 +66,7 @@ class Response implements HttpServletResponse
         $this->httpResponse = $httpResponse;
         $this->initDefaultHeaders();
     }
-    
+
     /**
      * Initializes the response with the default headers.
      *
@@ -78,11 +78,11 @@ class Response implements HttpServletResponse
         $this->addHeader(HttpProtocol::HEADER_EXPIRES, '19 Nov 1981 08:52:00 GMT');
         $this->addHeader(HttpProtocol::HEADER_CACHE_CONTROL, 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
         $this->addHeader(HttpProtocol::HEADER_PRAGMA, 'no-cache');
-        
+
         // set per default text/html mimetype
         $this->addHeader(HttpProtocol::HEADER_CONTENT_TYPE, 'text/html');
     }
-    
+
     /**
      * Returns the Http response instance.
      *
@@ -115,12 +115,28 @@ class Response implements HttpServletResponse
      */
     public function hasCookie($cookieName)
     {
-        foreach ($this->cookies as $cookie) {
+        foreach ($this->getCookies() as $cookie) {
             if ($cookie->getName() === $cookieName) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Returns the cookie with the  a cookie
+     *
+     * @param string $cookieName Name of the cookie to be checked
+     *
+     * @return \TechDivision\Servlet\Http\Cookie $cookie The cookie instance
+     */
+    public function getCookie($cookieName)
+    {
+        foreach ($this->getCookies() as $cookie) {
+            if ($cookie->getName() === $cookieName) {
+                return $cookie;
+            }
+        }
     }
 
     /**
@@ -136,7 +152,7 @@ class Response implements HttpServletResponse
     /**
      * Return content
      *
-     * @return string $content  
+     * @return string $content
      */
     public function getBodyContent()
     {

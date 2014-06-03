@@ -60,7 +60,7 @@ interface SessionManager
      *
      * @return \TechDivision\Servlet\ServletSession The requested session
      */
-    public function create($id, $sessionName, $lifetime = null, $maximumAge = null, $domain = null, $path = null, $secure = null, $httpOnly = null);
+    public function create($id, $name, $lifetime = null, $maximumAge = null, $domain = null, $path = null, $secure = null, $httpOnly = null);
 
     /**
      * Attachs the passed session to the manager and returns the instance. If a session

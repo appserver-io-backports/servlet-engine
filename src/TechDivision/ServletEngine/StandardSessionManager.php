@@ -34,12 +34,12 @@ use TechDivision\Storage\GenericStackable;
  * A standard session manager implementation that provides session
  * persistence while server has not been restarted.
  *
- * @category Appserver
- * @package TechDivision_ServletEngine
- * @author Tim Wagner <tw@techdivision.com>
+ * @category  Appserver
+ * @package   TechDivision_ServletEngine
+ * @author    Tim Wagner <tw@techdivision.com>
  * @copyright 2014 TechDivision GmbH <info@techdivision.com>
- * @license http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
- * @link http://www.appserver.io
+ * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
+ * @link      http://www.appserver.io
  */
 class StandardSessionManager extends GenericStackable implements SessionManager
 {
@@ -54,7 +54,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     /**
      * Injects the session checksum storage to watch changed sessions.
      *
-     * @param \TechDivision\Storage\StorageInterface $sessions The checksum session storage to use
+     * @param \TechDivision\Storage\StorageInterface $sessions  The checksum session storage to use
      * @param \TechDivision\Storage\StorageInterface $checksums The checksum session storage to use
      *
      * @return void
@@ -181,7 +181,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
      *
      * @return \TechDivision\Servlet\ServletSession The requested session
      */
-    public function create($id, $sessionName, $lifetime = null, $maximumAge = null, $domain = null, $path = null, $secure = null, $httpOnly = null)
+    public function create($id, $name, $lifetime = null, $maximumAge = null, $domain = null, $path = null, $secure = null, $httpOnly = null)
     {
 
         // copy the default session configuration for lifetime from the settings
@@ -215,7 +215,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
         }
 
         // initialize and return the session instance
-        $session = new Session($id, $sessionName, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
+        $session = new Session($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
 
         // attach the session with a random
         $this->attach($session);

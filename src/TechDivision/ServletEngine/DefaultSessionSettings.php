@@ -150,7 +150,7 @@ class DefaultSessionSettings implements SessionSettings
     /**
      * Set the default path to persist sessions.
      *
-     * @param string $sessionName The default path to persist sessions
+     * @param string $sessionSavePath The default path to persist sessions
      *
      * @return void
      */

@@ -54,18 +54,25 @@ class DefaultSessionSettings implements SessionSettings
     protected $sessionName = DefaultSessionSettings::DEFAULT_SESSION_NAME;
 
     /**
-     * The session cookie lifetime.
-     *
-     * @var integer
-     */
-    protected $sessionCookieLifetime = 0;
-
-    /**
      * The maximum age in seconds, or NULL if none has been defined.
      *
      * @var integer
      */
     protected $sessionMaximumAge = 0;
+
+    /**
+     * The default path to persist sessions.
+     *
+     * @var string
+     */
+    protected $sessionSavePath = null;
+
+    /**
+     * The session cookie lifetime.
+     *
+     * @var integer
+     */
+    protected $sessionCookieLifetime = 0;
 
     /**
      * The cookie domain set for the session.
@@ -138,6 +145,28 @@ class DefaultSessionSettings implements SessionSettings
     public function getSessionName()
     {
         return $this->sessionName;
+    }
+
+    /**
+     * Set the default path to persist sessions.
+     *
+     * @param string $sessionName The default path to persist sessions
+     *
+     * @return void
+     */
+    public function setSessionSavePath($sessionSavePath)
+    {
+        $this->sessionSavePath = $sessionSavePath;
+    }
+
+    /**
+     * Returns the default path to persist sessions.
+     *
+     * @return string The default path to persist session
+     */
+    public function getSessionSavePath()
+    {
+        return $this->sessionSavePath;
     }
 
     /**

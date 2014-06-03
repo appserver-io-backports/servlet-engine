@@ -21,10 +21,8 @@
 
 namespace TechDivision\ServletEngine;
 
-use TechDivision\Servlet\ServletRequest;
 use TechDivision\Servlet\ServletSession;
-use TechDivision\Servlet\Http\HttpSession;
-use TechDivision\Servlet\Http\HttpServletRequest;
+use TechDivision\ServletEngine\SessionSettings;
 
 /**
  * Interface for the session managers.
@@ -40,14 +38,29 @@ interface SessionManager
 {
 
     /**
+     * Injects the settings
+     *
+     * @param \TechDivision\ServletEngine\SessionSettings $settings Settings for the session handling
+     *
+     * @return void
+     */
+    public function injectSettings(SessionSettings $settings);
+
+    /**
      * Creates a new session with the passed session ID and session name if give.
      *
-     * @param string $id          The unique session ID to use
-     * @param string $sessionName The name of the session to use
+     * @param mixed            $id         The session ID
+     * @param string           $name       The session name
+     * @param integer|DateTime $lifetime   Date and time after the session expires
+     * @param integer|null     $maximumAge Number of seconds until the session expires
+     * @param string|null      $domain     The host to which the user agent will send this cookie
+     * @param string           $path       The path describing the scope of this cookie
+     * @param boolean          $secure     If this cookie should only be sent through a "secure" channel by the user agent
+     * @param boolean          $httpOnly   If this cookie should only be used through the HTTP protocol
      *
-     * @return \TechDivision\Servlet\HttpSession The requested session
+     * @return \TechDivision\Servlet\ServletSession The requested session
      */
-    public function create($id, $sessionName);
+    public function create($id, $name, $lifetime = null, $maximumAge = null, $domain = null, $path = null, $secure = null, $httpOnly = null);
 
     /**
      * Attachs the passed session to the manager and returns the instance. If a session
@@ -73,16 +86,17 @@ interface SessionManager
     public function find($id);
 
     /**
-     * Returns all sessions actually attached to the session manager.
+     * Initializes the session manager instance.
      *
-     * @return array The array with sessions
+     * @return void
      */
-    public function getSessions();
+    public function initialize();
 
     /**
-     * Collects the session garbage.
+     * This method will be invoked by the engine after the
+     * servlet has been serviced.
      *
-     * @return integer The number of removed sessions
+     * @return void
      */
-    public function collectGarbage();
+    public function service();
 }

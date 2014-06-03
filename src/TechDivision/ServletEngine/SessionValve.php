@@ -55,6 +55,6 @@ class SessionValve implements Valve
         $manager = $servletRequest->getContext()->getSessionManager();
 
         //  run the garbage collector to remove expired sessions
-        $manager->collectGarbage();
+        $manager->service();
     }
 }

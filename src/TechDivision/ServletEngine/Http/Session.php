@@ -276,6 +276,21 @@ class Session extends GenericStackable implements ServletSession
     }
 
     /**
+     * Returns the checksum for this session instance.
+     *
+     * @return string The checksum
+     */
+    public function checksum()
+    {
+
+        // create an array with the data we want to add to a checksum
+        $checksumData = array($this->started, $this->data);
+
+        // create the checksum and return it
+        return md5(json_encode($checksumData));
+    }
+
+    /**
      * Returns TRUE if there is a session that can be resumed.
      *
      * If a to-be-resumed session was inactive for too long, this function will
@@ -304,6 +319,42 @@ class Session extends GenericStackable implements ServletSession
             $this->lastActivityTimestamp = time();
             return $lastActivitySecondsAgo;
         }
+    }
+
+    /**
+     * Creates a new session instance from the passed json string
+     *
+     * @param string $jsonString The string containing the JSON data
+     *
+     * @return \TechDivision\Servlet\ServletSession The initialized session instance
+     */
+    public static function fromJson($jsonString)
+    {
+
+        // decode the string
+        $decodedSession = json_decode($jsonString);
+
+        // extract the values
+        $id = $decodedSession->id;
+        $sessionName = $decodedSession->sessionName;
+        $lifetime = $decodedSession->lifetime;
+        $maximumAge = $decodedSession->maximumAge;
+        $domain = $decodedSession->domain;
+        $path = $decodedSession->path;
+        $secure = $decodedSession->secure;
+        $httpOnly = $decodedSession->httpOnly;
+        $data = $decodedSession->data;
+
+        // initialize and return the session instance
+        $session = new Session($id, $sessionName, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
+
+        // append the session data
+        foreach (get_object_vars($data) as $key => $value) {
+            $session->putData($key, $value);
+        }
+
+        // return a new instance with the data we found in the JSON file
+        return $session;
     }
 
     /**

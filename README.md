@@ -1,8 +1,8 @@
 TechDivision_ServletEngine
 =================
-Additional classes to use with TechDivision_Server to allow implementing a server communicating over [websockets](<http://en.wikipedia.org/wiki/WebSocket>).
+Allows for servlet usage within a server environment.
 ____________________________________________
-[![Latest Stable Version](https://poser.pugx.org/techdivision/servletengine/v/stable.png)](https://packagist.org/packages/techdivision/servletengine) [![Total Downloads](https://poser.pugx.org/techdivision/servletengine/downloads.png)](https://packagist.org/packages/techdivision/websocketserver) [![Latest Unstable Version](https://poser.pugx.org/techdivision/servletengine/v/unstable.png)](https://packagist.org/packages/techdivision/servletengine) [![License](https://poser.pugx.org/techdivision/servletengine/license.png)](https://packagist.org/packages/techdivision/servletengine) [![Build Status](https://travis-ci.org/techdivision/TechDivision_ServletEngine.png)](https://travis-ci.org/techdivision/TechDivision_ServletEngine)
+[![Latest Stable Version](https://poser.pugx.org/techdivision/servletengine/v/stable.png)](https://packagist.org/packages/techdivision/servletengine) [![Total Downloads](https://poser.pugx.org/techdivision/servletengine/downloads.png)](https://packagist.org/packages/techdivision/servletengine) [![Latest Unstable Version](https://poser.pugx.org/techdivision/servletengine/v/unstable.png)](https://packagist.org/packages/techdivision/servletengine) [![License](https://poser.pugx.org/techdivision/servletengine/license.png)](https://packagist.org/packages/techdivision/servletengine) [![Build Status](https://travis-ci.org/techdivision/TechDivision_ServletEngine.png)](https://travis-ci.org/techdivision/TechDivision_ServletEngine)
 ____________________________________________
 
 

@@ -324,8 +324,21 @@ class StandardSessionManager extends GenericStackable implements SessionManager
                             // first we've to remove the session from the manager
                             $this->getSessions()->remove($session->getId());
 
-                            // then we destroy the instance itself
-                            $session->destroy(sprintf('Session %s was inactive for %s seconds, more than the configured timeout of %s seconds.', $session->getId(), $lastActivitySecondsAgo, $inactivityTimeout));
+                            // then we remove the session checksum
+                            $this->getChecksums()->remove($id);
+
+                            // destroy the session if not already done
+                            if ($session->getId() != null) {
+                                $session->destroy(sprintf('Session %s was inactive for %s seconds, more than the configured timeout of %s seconds.', $session->getId(), $lastActivitySecondsAgo, $inactivityTimeout));
+
+                            }
+                            // prepare the session filename
+                            $sessionFilename = $this->getSessionSavePath(StandardSessionManager::SESSION_PREFIX . $id);
+
+                            // delete the file containing the session data if available
+                            if (file_exists($sessionFilename)) {
+                                unlink($sessionFilename);
+                            }
 
                             // raise the counter of expired session
                             $sessionRemovalCount ++;
@@ -364,23 +377,22 @@ class StandardSessionManager extends GenericStackable implements SessionManager
                 if ($session instanceof ServletSession) {
 
                     // and it has changed
-                    if ($checksum != $session->checksum()) {
+                    if ($session->getId() != null && $checksum != $session->checksum()) {
 
                         // update the checksum and the file that stores the session data
                         file_put_contents($sessionFilename, json_encode($session));
                         $this->getChecksums()->set($id, $session->checksum());
                     }
+
+                    // and it has changed, but the session has been destroyed
+                    if ($session->getId() == null && $checksum != $session->checksum()) {
+
+                        // delete the file containing the session data if available
+                        if (file_exists($sessionFilename)) {
+                            unlink($sessionFilename);
+                        }
+                    }
                 }
-
-            } else { // if the session is not available anymore
-
-                // delete the file containing the session data if available
-                if (file_exists($sessionFilename)) {
-                    unlink($sessionFilename);
-                }
-
-                // remove the checksum
-                $this->getChecksums()->remove($id);
             }
         }
     }

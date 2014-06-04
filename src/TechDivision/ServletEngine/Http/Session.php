@@ -284,7 +284,7 @@ class Session extends GenericStackable implements ServletSession
     {
 
         // create an array with the data we want to add to a checksum
-        $checksumData = array($this->started, $this->data);
+        $checksumData = array($this->started, $this->id, $this->name, $this->data);
 
         // create the checksum and return it
         return md5(json_encode($checksumData));
@@ -336,7 +336,7 @@ class Session extends GenericStackable implements ServletSession
 
         // extract the values
         $id = $decodedSession->id;
-        $sessionName = $decodedSession->sessionName;
+        $name = $decodedSession->name;
         $lifetime = $decodedSession->lifetime;
         $maximumAge = $decodedSession->maximumAge;
         $domain = $decodedSession->domain;
@@ -346,7 +346,7 @@ class Session extends GenericStackable implements ServletSession
         $data = $decodedSession->data;
 
         // initialize and return the session instance
-        $session = new Session($id, $sessionName, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
+        $session = new Session($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
 
         // append the session data
         foreach (get_object_vars($data) as $key => $value) {
@@ -367,6 +367,7 @@ class Session extends GenericStackable implements ServletSession
     public function destroy($reason)
     {
         $this->id = null;
+        $this->lifetime = 0;
         $this->lastActivityTimestamp = 0;
         $this->maximumAge = -1;
     }

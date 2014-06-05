@@ -55,7 +55,7 @@ class SessionFactory extends \Thread
      * Initializes the session pool with the session pool storage.
      *
      * @param \TechDivision\Storage\StorageInterface $sessionPool The session pool storage
-     * @param integer $poolSize The pool size we have to handle
+     * @param integer                                $poolSize    The pool size we have to handle
      *
      * @return void
      */
@@ -102,7 +102,7 @@ class SessionFactory extends \Thread
         while ($this->createThreads) {
 
             // we wait for the session manager to be notfied
-            $this->synchronized(function($self) {
+            $this->synchronized(function ($self) {
                  $self->wait();
             }, $this);
 

@@ -241,7 +241,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
         if ($this->nextSessionCounter == 10) {
 
             // notify the factory to create a new session instance
-            $sessionFactory->synchronized(function($factory) {
+            $sessionFactory->synchronized(function ($factory) {
                 $factory->notify();
             }, $sessionFactory);
 

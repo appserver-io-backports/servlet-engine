@@ -45,6 +45,13 @@ class StandardSessionManager extends GenericStackable implements SessionManager
 {
 
     /**
+     * The size of the sesion pool
+     *
+     * @var integer
+     */
+    const SESSION_POOL_SIZE = 10;
+
+    /**
      * The default session prefix
      *
      * @var string
@@ -54,27 +61,21 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     /**
      * Injects the session checksum storage to watch changed sessions.
      *
-     * @param \TechDivision\Storage\StorageInterface $sessions  The checksum session storage to use
-     * @param \TechDivision\Storage\StorageInterface $checksums The checksum session storage to use
-     *
      * @return void
      */
-    public function __construct($sessions = null, $checksums = null)
+    public function __construct()
     {
 
-        // check if an storage for the session has been passed
-        if ($sessions == null) {
-            $sessions = new StackableStorage();
-        }
-
-        // check if an storage for the checksums has been passed
-        if ($checksums == null) {
-            $checksums = new StackableStorage();
-        }
-
         // initialize the session and the checksum storage
-        $this->sessions = $sessions;
-        $this->checksums = $checksums;
+        $this->sessions = new StackableStorage();
+        $this->checksums = new StackableStorage();
+
+        // initialize the counter for the next session to load from the pool
+        $this->nextSessionCounter = 0;
+
+        // start the session factory instance
+        $this->sessionPool = new StackableStorage();
+        $this->sessionFactory = new SessionFactory($this->sessionPool, StandardSessionManager::SESSION_POOL_SIZE);
     }
 
     /**
@@ -100,7 +101,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     }
 
     /**
-     * Returns the session checksum storage to watch changed sessions..
+     * Returns the session checksum storage to watch changed sessions.
      *
      * @return \TechDivision\Storage\StorageInterface The session checksum storage
      */
@@ -117,6 +118,26 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     protected function getSettings()
     {
         return $this->settings;
+    }
+
+    /**
+     * Returns the session factory.
+     *
+     * @return \TechDivision\ServletEngine\SessionFactory The session factory instance
+     */
+    protected function getSessionFactory()
+    {
+        return $this->sessionFactory;
+    }
+
+    /**
+     * Returns the session pool instance.
+     *
+     * @return \TechDivision\Storage\StorageInterface The session pool
+     */
+    protected function getSessionPool()
+    {
+        return $this->sessionPool;
     }
 
     /**
@@ -159,12 +180,77 @@ class StandardSessionManager extends GenericStackable implements SessionManager
 
                 // decode the session from the filesystem
                 $jsonString = file_get_contents($sessionFile->getPathname());
-                $session = Session::fromJson($jsonString);
+                $session = $this->initSessionFromJson($jsonString);
 
                 // attach the the reloaded session
                 $this->attach($session);
             }
         }
+    }
+
+    /**
+     * Initializes the session instance from the passed json string.
+     *
+     * @param string $jsonString The string containing the JSON data
+     *
+     * @return void
+     */
+    protected function initSessionFromJson($jsonString)
+    {
+
+        // decode the string
+        $decodedSession = json_decode($jsonString);
+
+        // extract the values
+        $id = $decodedSession->id;
+        $name = $decodedSession->name;
+        $lifetime = $decodedSession->lifetime;
+        $maximumAge = $decodedSession->maximumAge;
+        $domain = $decodedSession->domain;
+        $path = $decodedSession->path;
+        $secure = $decodedSession->secure;
+        $httpOnly = $decodedSession->httpOnly;
+        $data = $decodedSession->data;
+
+        // initialize the instance
+        $session = $this->nextFromPool();
+        $session->init($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
+
+        // append the session data
+        foreach (get_object_vars($data) as $key => $value) {
+            $session->putData($key, $value);
+        }
+
+        // returns the session instance
+        return $session;
+    }
+
+    /**
+     * Load the next initialized session instance from the session pool.
+     *
+     * @return \TechDivision\Session\ServletSession The session instance
+     */
+    public function nextFromPool()
+    {
+
+        // load the session factory
+        $sessionFactory = $this->getSessionFactory();
+        $sessionPool = $this->getSessionPool();
+
+        // check the session counter
+        if ($this->nextSessionCounter == 10) {
+
+            // notify the factory to create a new session instance
+            $sessionFactory->synchronized(function($factory) {
+                $factory->notify();
+            }, $sessionFactory);
+
+            // reset the next session counter
+            $this->nextSessionCounter = 0;
+        }
+
+        // return the next session instance from the pool
+        return $sessionPool->get($this->nextSessionCounter++);
     }
 
     /**
@@ -215,7 +301,8 @@ class StandardSessionManager extends GenericStackable implements SessionManager
         }
 
         // initialize and return the session instance
-        $session = new Session($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
+        $session = $this->nextFromPool();
+        $session->init($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
 
         // attach the session with a random
         $this->attach($session);
@@ -272,9 +359,9 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     }
 
     /**
-     * Collects the session garbage.
+     * Collects the session garbage and persists sessions if necessary.
      *
-     * @return integer The number of expired and removed sessions
+     * @return void
      */
     public function service()
     {

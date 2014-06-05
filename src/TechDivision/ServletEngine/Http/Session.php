@@ -52,7 +52,7 @@ class Session extends GenericStackable implements ServletSession
 {
 
     /**
-     * Initializes the session.
+     * Constructor to initialize a newly created session.
      *
      * @param mixed            $id         The session ID
      * @param string           $name       The session name
@@ -72,6 +72,29 @@ class Session extends GenericStackable implements ServletSession
         $this->started = false;
 
         // initialize the session
+        $this->init($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
+
+        // initialize the storage for the session data
+        $this->data = new StackableStorage();
+    }
+
+    /**
+     * Initializes the session with the passed data.
+     *
+     * @param mixed            $id         The session ID
+     * @param string           $name       The session name
+     * @param integer|DateTime $lifetime   Date and time after the session expires
+     * @param integer|null     $maximumAge Number of seconds until the session expires
+     * @param string|null      $domain     The host to which the user agent will send this cookie
+     * @param string           $path       The path describing the scope of this cookie
+     * @param boolean          $secure     If this cookie should only be sent through a "secure" channel by the user agent
+     * @param boolean          $httpOnly   If this cookie should only be used through the HTTP protocol
+     *
+     * @return void
+     */
+    public function init($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly)
+    {
+        // initialize the session
         $this->id = $id;
         $this->name = $name;
         $this->lifetime = $lifetime;
@@ -83,9 +106,6 @@ class Session extends GenericStackable implements ServletSession
 
         // the UNIX timestamp where the last action on this session happens
         $this->lastActivityTimestamp = time();
-
-        // initialize the storage for the session data
-        $this->data = new StackableStorage();
     }
 
     /**
@@ -322,39 +342,24 @@ class Session extends GenericStackable implements ServletSession
     }
 
     /**
-     * Creates a new session instance from the passed json string
+     * Creates a new and empty session instance.
      *
-     * @param string $jsonString The string containing the JSON data
-     *
-     * @return \TechDivision\Servlet\ServletSession The initialized session instance
+     * @return \TechDivision\Servlet\ServletSession The empty, but initialized session instance
      */
-    public static function fromJson($jsonString)
+    public static function emptyInstance()
     {
 
-        // decode the string
-        $decodedSession = json_decode($jsonString);
-
         // extract the values
-        $id = $decodedSession->id;
-        $name = $decodedSession->name;
-        $lifetime = $decodedSession->lifetime;
-        $maximumAge = $decodedSession->maximumAge;
-        $domain = $decodedSession->domain;
-        $path = $decodedSession->path;
-        $secure = $decodedSession->secure;
-        $httpOnly = $decodedSession->httpOnly;
-        $data = $decodedSession->data;
+        $id = null;
+        $name = 'empty';
+        $lifetime = -1;
+        $maximumAge = -1;
+        $domain = '';
+        $path = '';
+        $secure = false;
+        $httpOnly = false;
 
-        // initialize and return the session instance
-        $session = new Session($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
-
-        // append the session data
-        foreach (get_object_vars($data) as $key => $value) {
-            $session->putData($key, $value);
-        }
-
-        // return a new instance with the data we found in the JSON file
-        return $session;
+        return new Session($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
     }
 
     /**

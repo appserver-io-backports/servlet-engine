@@ -38,7 +38,7 @@ use TechDivision\Servlet\ServletResponse;
  */
 class StandardAuthenticationManager implements AuthenticationManager
 {
-    
+
     /**
      * Handles request in order to authenticate.
      *
@@ -49,21 +49,22 @@ class StandardAuthenticationManager implements AuthenticationManager
      */
     public function handleRequest(ServletRequest $servletRequest, ServletResponse $servletResponse)
     {
-        
+
         // load the actual context instance
         $context = $servletRequest->getContext();
-        
+
         // iterate over all servlets and return the matching one
         foreach ($context->getServletContext()->getSecuredUrlConfigs() as $securedUrlConfig) {
-        
+
             // extract URL pattern and authentication configuration
             list ($urlPattern, $auth) = array_values($securedUrlConfig);
-        
-            if (fnmatch($urlPattern, $servletRequest->getServletPath())) {
+
+            // we'll match our URI against the URL pattern
+            if (fnmatch($urlPattern, $servletRequest->getServletPath() . $servletRequest->getPathInfo())) {
 
                 // load security configuration
                 $configuredAuthType = $securedUrlConfig['auth']['auth_type'];
-                
+
                 // check the authentication type
                 switch ($configuredAuthType) {
                     case "Basic":
@@ -75,11 +76,11 @@ class StandardAuthenticationManager implements AuthenticationManager
                     default:
                         throw new \Exception(sprintf('Unknown authentication type %s', $configuredAuthType));
                 }
-                
+
                 // initialize the authentication manager
                 $auth = new $authImplementation($securedUrlConfig);
                 $auth->init($servletRequest, $servletResponse);
-                
+
                 // try to authenticate the request
                 return $auth->authenticate();
             }

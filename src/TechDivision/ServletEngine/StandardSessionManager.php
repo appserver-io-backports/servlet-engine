@@ -75,7 +75,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
 
         // start the session factory instance
         $this->sessionPool = new StackableStorage();
-        $this->sessionFactory = new SessionFactory($this->sessionPool, StandardSessionManager::SESSION_POOL_SIZE);
+        $this->sessionFactory = new SessionFactory($this, $this->sessionPool, StandardSessionManager::SESSION_POOL_SIZE);
     }
 
     /**
@@ -230,7 +230,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
      *
      * @return \TechDivision\Session\ServletSession The session instance
      */
-    public function nextFromPool()
+    protected function nextFromPool()
     {
 
         // load the session factory
@@ -238,12 +238,11 @@ class StandardSessionManager extends GenericStackable implements SessionManager
         $sessionPool = $this->getSessionPool();
 
         // check the session counter
-        if ($this->nextSessionCounter == 10) {
+        if ($this->nextSessionCounter > (StandardSessionManager::SESSION_POOL_SIZE - 1)) {
 
             // notify the factory to create a new session instance
-            $sessionFactory->synchronized(function ($factory) {
-                $factory->notify();
-            }, $sessionFactory);
+            $sessionFactory->notify();
+            $this->wait();
 
             // reset the next session counter
             $this->nextSessionCounter = 0;

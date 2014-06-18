@@ -99,4 +99,11 @@ interface SessionManager
      * @return void
      */
     public function service();
+
+    /**
+     * Returns the session settings.
+     *
+     * @return \TechDivision\ServletEngine\SessionSettings The session settings
+     */
+    public function getSettings();
 }

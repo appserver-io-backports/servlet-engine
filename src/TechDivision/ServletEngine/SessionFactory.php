@@ -38,6 +38,13 @@ class SessionFactory extends \Thread
 {
 
     /**
+     * The session manager instance we're creating sessions for.
+     *
+     * @var \TechDivision\ServletEngine\SessionManager
+     */
+    protected $sessionManager;
+
+    /**
      * The session pool storage.
      *
      * @var \TechDivision\Storage\StorageInterface
@@ -54,15 +61,17 @@ class SessionFactory extends \Thread
     /**
      * Initializes the session pool with the session pool storage.
      *
-     * @param \TechDivision\Storage\StorageInterface $sessionPool The session pool storage
-     * @param integer                                $poolSize    The pool size we have to handle
+     * @param \TechDivision\ServletEngine\SessionManager $sessionManager The session pool storage
+     * @param \TechDivision\Storage\StorageInterface     $sessionPool    The session pool storage
+     * @param integer                                    $poolSize       The pool size we have to handle
      *
      * @return void
      */
-    public function __construct(StorageInterface $sessionPool, $poolSize = 10)
+    public function __construct(SessionManager $sessionManager, StorageInterface $sessionPool, $poolSize = 10)
     {
 
         // initialize session pool and size
+        $this->sessionManager = $sessionManager;
         $this->sessionPool = $sessionPool;
         $this->poolSize = $poolSize;
 
@@ -98,16 +107,20 @@ class SessionFactory extends \Thread
     public function run()
     {
 
+        // create a local reference to the session manager
+        $sessionManager = $this->sessionManager;
+
         // while we should create threads, to it
         while ($this->createThreads) {
 
             // we wait for the session manager to be notfied
-            $this->synchronized(function ($self) {
-                 $self->wait();
-            }, $this);
+            $this->wait();
 
             // refill the session pool
             $this->refill();
+
+            // we've to notify that we've created the sessions
+            $sessionManager->notify();
         }
     }
 

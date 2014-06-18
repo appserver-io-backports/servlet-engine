@@ -75,7 +75,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
 
         // start the session factory instance
         $this->sessionPool = new StackableStorage();
-        $this->sessionFactory = new SessionFactory($this->sessionPool, StandardSessionManager::SESSION_POOL_SIZE);
+        $this->sessionFactory = new SessionFactory($this, $this->sessionPool, StandardSessionManager::SESSION_POOL_SIZE);
     }
 
     /**
@@ -115,7 +115,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
      *
      * @return \TechDivision\ServletEngine\SessionSettings The session settings
      */
-    protected function getSettings()
+    public function getSettings()
     {
         return $this->settings;
     }
@@ -189,11 +189,13 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     }
 
     /**
-     * Initializes the session instance from the passed json string.
+     * Initializes the session instance from the passed JSON string. If the encoded
+     * data contains objects, they will be unserialized before reattached to the
+     * session instance.
      *
      * @param string $jsonString The string containing the JSON data
      *
-     * @return void
+     * @return \TechDivision\Servlet\ServletSession The decoded session instance
      */
     protected function initSessionFromJson($jsonString)
     {
@@ -218,7 +220,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
 
         // append the session data
         foreach (get_object_vars($data) as $key => $value) {
-            $session->putData($key, $value);
+            $session->putData($key, unserialize($value));
         }
 
         // returns the session instance
@@ -226,11 +228,47 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     }
 
     /**
+     * Transforms the passed session instance into a JSON encoded string. If the data contains
+     * objects, each of them will be serialized before store them to the persistence layer.
+     *
+     * @param \TechDivision\Servlet\ServletSession $session The session to be transformed
+     *
+     * @return string The JSON encoded session representation
+     */
+    protected function transformSessionToJson(ServletSession $session)
+    {
+
+        // create the stdClass (that can easy be transformed into an JSON object)
+        $stdClass = new \stdClass();
+
+        // copy the values to the stdClass
+        $stdClass->id = $session->getId();
+        $stdClass->name = $session->getName();
+        $stdClass->lifetime = $session->getLifetime();
+        $stdClass->maximumAge = $session->getMaximumAge();
+        $stdClass->domain = $session->getDomain();
+        $stdClass->path = $session->getPath();
+        $stdClass->secure = $session->isSecure();
+        $stdClass->httpOnly = $session->isHttpOnly();
+
+        // initialize the array for the session data
+        $stdClass->data = array();
+
+        // append the session data
+        foreach (get_object_vars($session->data) as $key => $value) {
+            $stdClass->data[$key] = serialize($value);
+        }
+
+        // returns the JSON encoded session instance
+        return json_encode($stdClass);
+    }
+
+    /**
      * Load the next initialized session instance from the session pool.
      *
      * @return \TechDivision\Session\ServletSession The session instance
      */
-    public function nextFromPool()
+    protected function nextFromPool()
     {
 
         // load the session factory
@@ -238,12 +276,11 @@ class StandardSessionManager extends GenericStackable implements SessionManager
         $sessionPool = $this->getSessionPool();
 
         // check the session counter
-        if ($this->nextSessionCounter == 10) {
+        if ($this->nextSessionCounter > (StandardSessionManager::SESSION_POOL_SIZE - 1)) {
 
             // notify the factory to create a new session instance
-            $sessionFactory->synchronized(function ($factory) {
-                $factory->notify();
-            }, $sessionFactory);
+            $sessionFactory->notify();
+            $this->wait();
 
             // reset the next session counter
             $this->nextSessionCounter = 0;
@@ -296,7 +333,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
         }
 
         // copy the default session configuration for the http only flag from the settings
-        if ($httpOnly) {
+        if ($httpOnly == null) {
             $httpOnly = $this->getSettings()->getSessionCookieHttpOnly();
         }
 
@@ -467,7 +504,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
                     if ($session->getId() != null && $checksum != $session->checksum()) {
 
                         // update the checksum and the file that stores the session data
-                        file_put_contents($sessionFilename, json_encode($session));
+                        file_put_contents($sessionFilename, $this->transformSessionToJson($session));
                         $this->getChecksums()->set($id, $session->checksum());
                     }
 

@@ -115,7 +115,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
      *
      * @return \TechDivision\ServletEngine\SessionSettings The session settings
      */
-    protected function getSettings()
+    public function getSettings()
     {
         return $this->settings;
     }
@@ -333,7 +333,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
         }
 
         // copy the default session configuration for the http only flag from the settings
-        if ($httpOnly) {
+        if ($httpOnly == null) {
             $httpOnly = $this->getSettings()->getSessionCookieHttpOnly();
         }
 

@@ -61,9 +61,9 @@ class SessionFactory extends \Thread
     /**
      * Initializes the session pool with the session pool storage.
      *
-     * @param \TechDivision\ServletEngine\SessionManager $sessionPool The session pool storage
-     * @param \TechDivision\Storage\StorageInterface     $sessionPool The session pool storage
-     * @param integer                                    $poolSize    The pool size we have to handle
+     * @param \TechDivision\ServletEngine\SessionManager $sessionManager The session pool storage
+     * @param \TechDivision\Storage\StorageInterface     $sessionPool    The session pool storage
+     * @param integer                                    $poolSize       The pool size we have to handle
      *
      * @return void
      */

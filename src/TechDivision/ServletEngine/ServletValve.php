@@ -21,6 +21,7 @@
 
 namespace TechDivision\ServletEngine;
 
+use \TechDivision\Servlet\ServletSession;
 use \TechDivision\Servlet\Http\HttpServletRequest;
 use \TechDivision\Servlet\Http\HttpServletResponse;
 
@@ -37,7 +38,7 @@ use \TechDivision\Servlet\Http\HttpServletResponse;
  */
 class ServletValve
 {
-    
+
     /**
      * Load the actual context instance, the servlet and handle the request.
      *
@@ -48,6 +49,17 @@ class ServletValve
      */
     public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
     {
+
+        // load the session manager and the servlet context
+        $sessionManager = $servletRequest->getContext()->getSessionManager();
+        $servletContext = $servletRequest->getContext()->getServletContext();
+
+        // if we've session parameters defined in our servlet context
+        if ($servletContext->hasSessionParameters()) { // we want to merge the session settings from the servlet context into our session manager
+            $sessionManager->getSettings()->mergeServletContext($servletContext);
+        }
+
+        // after that, we can service the request
         $servletRequest->getContext()->locate($servletRequest)->service($servletRequest, $servletResponse);
     }
 }

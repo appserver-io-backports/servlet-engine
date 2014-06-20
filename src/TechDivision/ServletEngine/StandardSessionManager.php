@@ -219,7 +219,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
         $session->init($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
 
         // append the session data
-        foreach (get_object_vars($data) as $key => $value) {
+        foreach ($data as $key => $value) {
             $session->putData($key, unserialize($value));
         }
 
@@ -519,28 +519,5 @@ class StandardSessionManager extends GenericStackable implements SessionManager
                 }
             }
         }
-    }
-
-    /**
-     * Creates a random string with the passed length.
-     *
-     * @param integer $length The string lenght to generate
-     *
-     * @return string The random string
-     */
-    protected function generateRandomString($length = 32)
-    {
-
-        // prepare an array with the chars used to create a random string
-        $letters = str_split('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz');
-
-        // create and return the random string
-        $bytes = '';
-        foreach (range(1, $length) as $i) {
-            $bytes = $letters[mt_rand(0, sizeof($letters) - 1)] . $bytes;
-        }
-
-        // return the unique ID
-        return $bytes;
     }
 }

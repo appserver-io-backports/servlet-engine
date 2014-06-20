@@ -143,13 +143,25 @@ class Session extends GenericStackable implements ServletSession
     }
 
     /**
-     * Returns the current session identifier
+     * Returns the current session identifier.
      *
      * @return string The current session identifier
      */
     public function getId()
     {
         return $this->id;
+    }
+
+    /**
+     * Sets the current session identifier.
+     *
+     * @param string $id The current session identifier
+     *
+     * @return void
+     */
+    public function setId($id)
+    {
+         $this->id = $id;
     }
 
     /**
@@ -160,6 +172,18 @@ class Session extends GenericStackable implements ServletSession
     public function getName()
     {
         return $this->name;
+    }
+
+    /**
+     * Sets the session name.
+     *
+     * @param string $name The session name
+     *
+     * @return void
+     */
+    public function setName($name)
+    {
+         $this->name = $name;
     }
 
     /**

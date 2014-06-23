@@ -1,7 +1,7 @@
 <?php
 
 /**
- * TechDivision\ServletEngine\SessionValve
+ * TechDivision\ServletEngine\SessionDataNotReadableException
  *
  * NOTICE OF LICENSE
  *
@@ -21,14 +21,10 @@
 
 namespace TechDivision\ServletEngine;
 
-use \TechDivision\ServletEngine\Valve;
-use \TechDivision\Servlet\Http\Cookie;
-use \TechDivision\Servlet\Http\HttpSession;
-use \TechDivision\Servlet\Http\HttpServletRequest;
-use \TechDivision\Servlet\Http\HttpServletResponse;
+use TechDivision\Servlet\IllegalStateException;
 
 /**
- * This valve will check if the actual request needs authentication.
+ * This exception is thrown if the session data readed from the persistence layer is not readable.
  *
  * @category  Appserver
  * @package   TechDivision_ServletEngine
@@ -37,18 +33,6 @@ use \TechDivision\Servlet\Http\HttpServletResponse;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class SessionValve implements Valve
+class SessionDataNotReadableException extends \Exception
 {
-
-    /**
-     * Processes this valve (session handling).
-     *
-     * @param \TechDivision\Servlet\ServletRequest  $servletRequest  The request instance
-     * @param \TechDivision\Servlet\ServletResponse $servletResponse The response instance
-     *
-     * @return void
-     */
-    public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
-    {
-    }
 }

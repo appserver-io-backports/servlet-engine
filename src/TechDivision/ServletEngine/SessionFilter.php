@@ -1,7 +1,7 @@
 <?php
 
 /**
- * TechDivision\ServletEngine\SessionValve
+ * TechDivision\ServletEngine\FilterIterator
  *
  * NOTICE OF LICENSE
  *
@@ -21,14 +21,9 @@
 
 namespace TechDivision\ServletEngine;
 
-use \TechDivision\ServletEngine\Valve;
-use \TechDivision\Servlet\Http\Cookie;
-use \TechDivision\Servlet\Http\HttpSession;
-use \TechDivision\Servlet\Http\HttpServletRequest;
-use \TechDivision\Servlet\Http\HttpServletResponse;
-
 /**
- * This valve will check if the actual request needs authentication.
+ * A filter implementation to make sure, that only the newest, configurable session
+ * files are preloaded when the session manager has been initialized.
  *
  * @category  Appserver
  * @package   TechDivision_ServletEngine
@@ -37,18 +32,35 @@ use \TechDivision\Servlet\Http\HttpServletResponse;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class SessionValve implements Valve
+class SessionFilter extends \FilterIterator
 {
 
-    /**
-     * Processes this valve (session handling).
-     *
-     * @param \TechDivision\Servlet\ServletRequest  $servletRequest  The request instance
-     * @param \TechDivision\Servlet\ServletResponse $servletResponse The response instance
-     *
-     * @return void
-     */
-    public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
+    protected $userFilter;
+
+    public function __construct(\Iterator $iterator , $userFilter)
     {
+
+        parent::__construct($iterator);
+
+        $this->userFilter = $userFilter;
+    }
+
+    public function accept()
+    {
+
+        $splFileInfo = $this->getInnerIterator()->current();
+
+        $aTime = time() - $this->userFilter;
+
+        if ($splFileInfo->getATime() < $aTime) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static function newInstance($sessionSavePath, $userFiler)
+    {
+        return new SessionFilter(new \GlobIterator($sessionSavePath), $userFilter);
     }
 }

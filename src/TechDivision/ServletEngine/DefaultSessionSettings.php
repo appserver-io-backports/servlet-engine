@@ -43,6 +43,13 @@ class DefaultSessionSettings extends GenericStackable implements SessionSettings
     const DEFAULT_SESSION_NAME = 'SESSID';
 
     /**
+     * The default session prefix.
+     *
+     * @var string
+     */
+    const DEFAULT_SESSION_FILE_PREFIX = 'sess_';
+
+    /**
      * The default session cookie path.
      *
      * @var string
@@ -50,21 +57,37 @@ class DefaultSessionSettings extends GenericStackable implements SessionSettings
     const DEFAULT_SESSION_COOKIE_PATH = '/';
 
     /**
+     * The default inactivity timeout.
+     *
+     * @var string
+     */
+    const DEFAULT_INACTIVITY_TIMEOUT = 1440;
+
+    /**
+     * The default probaility the garbage collection will be invoked.
+     *
+     * @var string
+     */
+    const DEFAULT_GARBAGE_COLLECTION_PROBABILITY = 0.1;
+
+    /**
      * Initialize the default session settings.
      *
+     * @return void
      */
     public function __construct()
     {
         // initialize the default values
         $this->setSessionCookieLifetime(86400);
         $this->setSessionName(DefaultSessionSettings::DEFAULT_SESSION_NAME);
+        $this->setSessionFilePrefix(DefaultSessionSettings::DEFAULT_SESSION_FILE_PREFIX);
         $this->setSessionMaximumAge(0);
         $this->setSessionCookieDomain(Cookie::LOCALHOST);
         $this->setSessionCookiePath(DefaultSessionSettings::DEFAULT_SESSION_COOKIE_PATH);
         $this->setSessionCookieSecure(false);
         $this->setSessionCookieHttpOnly(false);
-        $this->setGarbageCollectionProbability(0.1);
-        $this->setInactivityTimeout(1440);
+        $this->setGarbageCollectionProbability(DefaultSessionSettings::DEFAULT_GARBAGE_COLLECTION_PROBABILITY);
+        $this->setInactivityTimeout(DefaultSessionSettings::DEFAULT_INACTIVITY_TIMEOUT);
     }
 
     /**
@@ -87,6 +110,28 @@ class DefaultSessionSettings extends GenericStackable implements SessionSettings
     public function getSessionName()
     {
         return $this->sessionName;
+    }
+
+    /**
+     * Set the session file prefix we use.
+     *
+     * @param string $sessionFilePrefix The session file prefix
+     *
+     * @return void
+     */
+    public function setSessionFilePrefix($sessionFilePrefix)
+    {
+        $this->sessionFilePrefix = $sessionFilePrefix;
+    }
+
+    /**
+     * Returns the session file prefix to use.
+     *
+     * @return string The session file prefix
+     */
+    public function getSessionFilePrefix()
+    {
+        return $this->sessionFilePrefix;
     }
 
     /**
@@ -306,6 +351,10 @@ class DefaultSessionSettings extends GenericStackable implements SessionSettings
 
             if (($sessionName = $context->getSessionParameter(ServletSession::SESSION_NAME)) != null) {
                 $this->setSessionName($sessionName);
+            }
+
+            if (($sessionFilePrefix = $context->getSessionParameter(ServletSession::SESSION_FILE_PREFIX)) != null) {
+                $this->setSessionFilePrefix($sessionFilePrefix);
             }
 
             if (($sessionSavePath = $context->getSessionParameter(ServletSession::SESSION_SAVE_PATH)) != null) {

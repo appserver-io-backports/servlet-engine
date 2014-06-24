@@ -29,6 +29,7 @@ use TechDivision\ServletEngine\SessionSettings;
 use TechDivision\Storage\StorageInterface;
 use TechDivision\Storage\StackableStorage;
 use TechDivision\Storage\GenericStackable;
+use TechDivision\Servlet\ServletContext;
 
 /**
  * A standard session manager implementation that provides session
@@ -45,37 +46,74 @@ class StandardSessionManager extends GenericStackable implements SessionManager
 {
 
     /**
-     * The seconds a session file has to be lastly accessed to be initialized when the server starts.
+     * Injects the sessions.
      *
-     * @var integer
+     * @param \TechDivision\Storage\StorageInterface $sessions The sessions
+     *
+     * @return void
      */
-    const SESSION_LAST_ACCESS_TIME = 1440;
+    public function injectSessions($sessions)
+    {
+        $this->sessions = $sessions;
+    }
 
     /**
-     * Injects the session checksum storage to watch changed sessions.
+     * Injects the session factory.
+     *
+     * @param \TechDivision\ServletEngine\SessionFactory $sessionFactory The session factory
+     *
+     * @return void
+     */
+    public function injectSessionFactory($sessionFactory)
+    {
+        $this->sessionFactory = $sessionFactory;
+    }
+
+    /**
+     * Injects the session settings.
      *
      * @param \TechDivision\ServletEngine\SessionSettings $settings Settings for the session handling
      *
      * @return void
      */
-    public function __construct($settings)
+    public function injectSessionSettings($sessionSettings)
     {
+        $this->sessionSettings = $sessionSettings;
+    }
 
-        $this->settings = $settings;
+    /**
+     * Injects the persistence manager.
+     *
+     * @param \TechDivision\ServletEngine\PersistenceManager $persistenceManager The persistence manager
+     *
+     * @return void
+     */
+    public function injectPersistenceManager(PersistenceManager $persistenceManager)
+    {
+        $this->persistenceManager = $persistenceManager;
+    }
 
-        // initialize the session and the checksum storage
-        $this->sessions = new StackableStorage();
+    /**
+     * Injects the garbage collector.
+     *
+     * @param \TechDivision\ServletEngine\GarbageCollector $garbageCollector The garbage collector
+     *
+     * @return void
+     */
+    public function injectGarbageCollector(GarbageCollector $garbageCollector)
+    {
+        $this->garbageCollector = $garbageCollector;
+    }
 
-        // initialize the counter for the next session to load from the pool
-        $this->nextSessionCounter = 0;
-
-        // initialize the session pool
-        $this->sessionPool = new StackableStorage();
-
-        // start the session factory, persistence manager and garbage collector instances
-        $this->sessionFactory = new SessionFactory($this);
-        $this->persistenceManager = new FilesystemPersistenceManager($this);
-        $this->garbageCollector = new GarbageCollector($this);
+    /**
+     * Initializes the session manager.
+     *
+     * @return void
+     */
+    public function initialize()
+    {
+        $this->getGarbageCollector()->initialize();
+        $this->getPersistenceManager()->initialize();
     }
 
     /**
@@ -93,9 +131,9 @@ class StandardSessionManager extends GenericStackable implements SessionManager
      *
      * @return \TechDivision\ServletEngine\SessionSettings The session settings
      */
-    public function getSettings()
+    public function getSessionSettings()
     {
-        return $this->settings;
+        return $this->sessionSettings;
     }
 
     /**
@@ -139,33 +177,6 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     }
 
     /**
-     * Load the next initialized session instance from the session pool.
-     *
-     * @return \TechDivision\Session\ServletSession The session instance
-     */
-    protected function nextFromPool()
-    {
-
-        // load the session factory
-        $sessionFactory = $this->getSessionFactory();
-        $sessionPool = $this->getSessionPool();
-
-        // check the session counter
-        if ($this->nextSessionCounter > (SessionFactory::SESSION_POOL_SIZE - 1)) {
-
-            // notify the factory to create a new session instance
-            $sessionFactory->notify();
-            $this->wait();
-
-            // reset the next session counter
-            $this->nextSessionCounter = 0;
-        }
-
-        // return the next session instance from the pool
-        return $sessionPool->get($this->nextSessionCounter++);
-    }
-
-    /**
      * Creates a new session with the passed session ID and session name if given.
      *
      * @param mixed            $id         The session ID
@@ -184,36 +195,36 @@ class StandardSessionManager extends GenericStackable implements SessionManager
 
         // copy the default session configuration for lifetime from the settings
         if ($lifetime == null) {
-            $lifetime = $this->getSettings()->getSessionCookieLifetime();
+            $lifetime = $this->getSessionSettings()->getSessionCookieLifetime();
         }
 
         // copy the default session configuration for maximum from the settings
         if ($maximumAge == null) {
-            $maximumAge = $this->getSettings()->getSessionMaximumAge();
+            $maximumAge = $this->getSessionSettings()->getSessionMaximumAge();
         }
 
         // copy the default session configuration for cookie domain from the settings
         if ($domain == null) {
-            $domain = $this->getSettings()->getSessionCookieDomain();
+            $domain = $this->getSessionSettings()->getSessionCookieDomain();
         }
 
         // copy the default session configuration for the cookie path from the settings
         if ($path == null) {
-            $path = $this->getSettings()->getSessionCookiePath();
+            $path = $this->getSessionSettings()->getSessionCookiePath();
         }
 
         // copy the default session configuration for the secure flag from the settings
         if ($secure == null) {
-            $secure = $this->getSettings()->getSessionCookieSecure();
+            $secure = $this->getSessionSettings()->getSessionCookieSecure();
         }
 
         // copy the default session configuration for the http only flag from the settings
         if ($httpOnly == null) {
-            $httpOnly = $this->getSettings()->getSessionCookieHttpOnly();
+            $httpOnly = $this->getSessionSettings()->getSessionCookieHttpOnly();
         }
 
         // initialize and return the session instance
-        $session = $this->nextFromPool();
+        $session = $this->getSessionFactory()->nextFromPool();
         $session->init($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
 
         // attach the session with a random

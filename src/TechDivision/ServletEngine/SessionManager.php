@@ -77,11 +77,18 @@ interface SessionManager
     public function find($id);
 
     /**
+     * Initializes the session manager.
+     *
+     * @return void
+     */
+    public function initialize();
+
+    /**
      * Returns the session settings.
      *
      * @return \TechDivision\ServletEngine\SessionSettings The session settings
      */
-    public function getSettings();
+    public function getSessionSettings();
 
     /**
      * Returns the session settings.

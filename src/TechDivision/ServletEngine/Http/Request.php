@@ -366,7 +366,7 @@ class Request implements HttpServletRequest
 
         // if we can't find a requested session name, we try to load the default session cookie
         if ($this->getRequestedSessionName() == null) {
-            $this->setRequestedSessionName($manager->getSettings()->getSessionName());
+            $this->setRequestedSessionName($manager->getSessionSettings()->getSessionName());
         }
 
         // load the requested session ID and name

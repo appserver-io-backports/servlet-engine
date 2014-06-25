@@ -1,7 +1,7 @@
 <?php
 
 /**
- * TechDivision\ServletEngine\ServletValve
+ * TechDivision\ServletEngine\SessionDirectoryCreationException
  *
  * NOTICE OF LICENSE
  *
@@ -21,13 +21,9 @@
 
 namespace TechDivision\ServletEngine;
 
-use \TechDivision\Servlet\ServletSession;
-use \TechDivision\Servlet\Http\HttpServletRequest;
-use \TechDivision\Servlet\Http\HttpServletResponse;
-
 /**
- * Valve implementation that will be executed by the servlet engine to handle
- * an incoming Http servlet request.
+ * This exception is thrown if the directory where we want to create the session
+ * files can't be created.
  *
  * @category  Appserver
  * @package   TechDivision_ServletEngine
@@ -36,19 +32,6 @@ use \TechDivision\Servlet\Http\HttpServletResponse;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class ServletValve
+class SessionDirectoryCreationException extends \Exception
 {
-
-    /**
-     * Load the actual context instance, the servlet and handle the request.
-     *
-     * @param \TechDivision\Servlet\ServletRequest  $servletRequest  The request instance
-     * @param \TechDivision\Servlet\ServletResponse $servletResponse The response instance
-     *
-     * @return void
-     */
-    public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
-    {
-        $servletRequest->getContext()->locate($servletRequest)->service($servletRequest, $servletResponse);
-    }
 }

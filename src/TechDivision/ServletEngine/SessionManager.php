@@ -38,15 +38,6 @@ interface SessionManager
 {
 
     /**
-     * Injects the settings
-     *
-     * @param \TechDivision\ServletEngine\SessionSettings $settings Settings for the session handling
-     *
-     * @return void
-     */
-    public function injectSettings(SessionSettings $settings);
-
-    /**
      * Creates a new session with the passed session ID and session name if give.
      *
      * @param mixed            $id         The session ID
@@ -86,24 +77,51 @@ interface SessionManager
     public function find($id);
 
     /**
-     * Initializes the session manager instance.
+     * Initializes the session manager.
      *
      * @return void
      */
     public function initialize();
 
     /**
-     * This method will be invoked by the engine after the
-     * servlet has been serviced.
+     * Returns the session settings.
      *
-     * @return void
+     * @return \TechDivision\ServletEngine\SessionSettings The session settings
      */
-    public function service();
+    public function getSessionSettings();
 
     /**
      * Returns the session settings.
      *
      * @return \TechDivision\ServletEngine\SessionSettings The session settings
      */
-    public function getSettings();
+    public function getSessions();
+
+    /**
+     * Returns the session factory.
+     *
+     * @return \TechDivision\ServletEngine\SessionFactory The session factory instance
+     */
+    public function getSessionFactory();
+
+    /**
+     * Returns the session pool instance.
+     *
+     * @return \TechDivision\Storage\StorageInterface The session pool
+     */
+    public function getSessionPool();
+
+    /**
+     * Returns the persistence manager instance.
+     *
+     * @return \TechDivision\ServletEngine\FilesystemPersistenceManager The persistence manager instance
+     */
+    public function getPersistenceManager();
+
+    /**
+     * Returns the garbage collector instance.
+     *
+     * @return \TechDivision\ServletEngine\GarbageCollector The garbage collector instance
+     */
+    public function getGarbageCollector();
 }

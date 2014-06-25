@@ -38,64 +38,77 @@ class SessionFactory extends \Thread
 {
 
     /**
+     * The size of the sesion pool
+     *
+     * @var integer
+     */
+    const SESSION_POOL_SIZE = 10;
+
+    /**
+     * Initializes the internal session counter.
+     *
+     * @var integer
+     */
+    protected $nextSessionCounter;
+
+    /**
      * The session manager instance we're creating sessions for.
      *
      * @var \TechDivision\ServletEngine\SessionManager
      */
-    protected $sessionManager;
-
-    /**
-     * The session pool storage.
-     *
-     * @var \TechDivision\Storage\StorageInterface
-     */
     protected $sessionPool;
 
     /**
-     * The session pool size.
+     * Initializes the session factory instance.
      *
-     * @var integer
-     */
-    protected $poolSize;
-
-    /**
-     * Initializes the session pool with the session pool storage.
-     *
-     * @param \TechDivision\ServletEngine\SessionManager $sessionManager The session pool storage
-     * @param \TechDivision\Storage\StorageInterface     $sessionPool    The session pool storage
-     * @param integer                                    $poolSize       The pool size we have to handle
+     * @param \TechDivision\Storage\StorageInterface $sessionPool The session pool
      *
      * @return void
      */
-    public function __construct(SessionManager $sessionManager, StorageInterface $sessionPool, $poolSize = 10)
+    public function __construct(StorageInterface $sessionPool)
     {
+        // initialize the members
+        $this->run = true;
+        $this->nextSessionCounter = 0;
 
-        // initialize session pool and size
-        $this->sessionManager = $sessionManager;
+        // set the session pool storage
         $this->sessionPool = $sessionPool;
-        $this->poolSize = $poolSize;
 
-        // refill the session pool
+        // initialize the session pool
         $this->refill();
-
-        // set the flag to start creating sessions
-        $this->createThreads = true;
-
-        // start the session factory
-        $this->start();
     }
 
     /**
-     * Initializes and adds a bunch of sessions to the session pool.
+     * Returns the session pool instance.
      *
-     * @return void
+     * @return \TechDivision\Storage\StorageInterface The session pool
      */
-    protected function refill()
+    public function getSessionPool()
     {
-        // add a new session to the pool
-        for ($i = 0; $i < $this->poolSize; $i++) {
-            $this->sessionPool->set($i, Session::emptyInstance());
+        return $this->sessionPool;
+    }
+
+    /**
+     * Load the next initialized session instance from the session pool.
+     *
+     * @return \TechDivision\Session\ServletSession The session instance
+     */
+    protected function nextFromPool()
+    {
+
+        // check the session counter
+        if ($this->nextSessionCounter > (SessionFactory::SESSION_POOL_SIZE - 1)) {
+
+            // notify the factory to create a new session instances
+            $this->notify();
+
+            // reset the next session counter
+            $this->nextSessionCounter = 0;
         }
+
+
+        // return the next session instance from the pool
+        return $this->getSessionPool()->get($this->nextSessionCounter++);
     }
 
     /**
@@ -107,20 +120,22 @@ class SessionFactory extends \Thread
     public function run()
     {
 
-        // create a local reference to the session manager
-        $sessionManager = $this->sessionManager;
-
         // while we should create threads, to it
-        while ($this->createThreads) {
-
-            // we wait for the session manager to be notfied
+        while ($this->run) {
             $this->wait();
-
-            // refill the session pool
             $this->refill();
+        }
+    }
 
-            // we've to notify that we've created the sessions
-            $sessionManager->notify();
+    /**
+     * Refills the session pool.
+     *
+     * @return void
+     */
+    protected function refill()
+    {
+        for ($i = 0; $i < SessionFactory::SESSION_POOL_SIZE; $i++) {
+            $this->getSessionPool()->set($i, Session::emptyInstance());
         }
     }
 
@@ -131,6 +146,6 @@ class SessionFactory extends \Thread
      */
     public function stop()
     {
-        $this->createThreads = false;
+        $this->run = false;
     }
 }

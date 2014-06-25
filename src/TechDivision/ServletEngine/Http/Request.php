@@ -24,13 +24,14 @@ namespace TechDivision\ServletEngine\Http;
 
 use TechDivision\Context\Context;
 use TechDivision\Http\HttpRequestInterface;
+use TechDivision\Servlet\SessionUtils;
 use TechDivision\Servlet\Http\Cookie;
+use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Servlet\Http\HttpSessionWrapper;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Servlet\Http\HttpServletResponse;
 use TechDivision\Server\Dictionaries\ServerVars;
 use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
-use TechDivision\Servlet\Http\HttpSession;
 
 /**
  * A Http servlet request implementation.
@@ -365,7 +366,7 @@ class Request implements HttpServletRequest
 
         // if we can't find a requested session name, we try to load the default session cookie
         if ($this->getRequestedSessionName() == null) {
-            $this->setRequestedSessionName($manager->getSettings()->getSessionName());
+            $this->setRequestedSessionName($manager->getSessionSettings()->getSessionName());
         }
 
         // load the requested session ID and name
@@ -387,7 +388,7 @@ class Request implements HttpServletRequest
 
             // check if a session ID has been specified
             if ($id == null) { // if not, generate a unique one
-                $id = $manager->generateRandomString();
+                $id = SessionUtils::generateRandomString();
             }
 
             // create a new session and register ID in request

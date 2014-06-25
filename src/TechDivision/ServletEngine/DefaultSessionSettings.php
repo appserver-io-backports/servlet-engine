@@ -16,6 +16,9 @@
 namespace TechDivision\ServletEngine;
 
 use TechDivision\Servlet\Http\Cookie;
+use TechDivision\Servlet\ServletSession;
+use TechDivision\Servlet\ServletContext;
+use TechDivision\Storage\GenericStackable;
 
 /**
  * Interface for all session storage implementation.
@@ -29,7 +32,7 @@ use TechDivision\Servlet\Http\Cookie;
  * @link      http://php.net/session
  * @link      http://php.net/setcookie
  */
-class DefaultSessionSettings implements SessionSettings
+class DefaultSessionSettings extends GenericStackable implements SessionSettings
 {
 
     /**
@@ -40,6 +43,13 @@ class DefaultSessionSettings implements SessionSettings
     const DEFAULT_SESSION_NAME = 'SESSID';
 
     /**
+     * The default session prefix.
+     *
+     * @var string
+     */
+    const DEFAULT_SESSION_FILE_PREFIX = 'sess_';
+
+    /**
      * The default session cookie path.
      *
      * @var string
@@ -47,82 +57,37 @@ class DefaultSessionSettings implements SessionSettings
     const DEFAULT_SESSION_COOKIE_PATH = '/';
 
     /**
-     * The session name to use.
+     * The default inactivity timeout.
      *
      * @var string
      */
-    protected $sessionName = DefaultSessionSettings::DEFAULT_SESSION_NAME;
+    const DEFAULT_INACTIVITY_TIMEOUT = 1440;
 
     /**
-     * The maximum age in seconds, or NULL if none has been defined.
-     *
-     * @var integer
-     */
-    protected $sessionMaximumAge = 0;
-
-    /**
-     * The default path to persist sessions.
+     * The default probaility the garbage collection will be invoked.
      *
      * @var string
      */
-    protected $sessionSavePath = null;
-
-    /**
-     * The session cookie lifetime.
-     *
-     * @var integer
-     */
-    protected $sessionCookieLifetime = 0;
-
-    /**
-     * The cookie domain set for the session.
-     *
-     * @var string
-     */
-    protected $sessionCookieDomain = Cookie::LOCALHOST;
-
-    /**
-     * The cookie path set for the session.
-     *
-     * @var string
-     */
-    protected $sessionCookiePath = DefaultSessionSettings::DEFAULT_SESSION_COOKIE_PATH;
-
-    /**
-     * The flag that the session cookie should only be set in a secure connection.
-     *
-     * @var boolean
-     */
-    protected $sessionCookieSecure = false;
-
-    /**
-     * The flag if the session should set a Http only cookie.
-     *
-     * @var boolean
-     */
-    protected $sessionCookieHttpOnly = false;
-
-    /**
-     * The probability the garbage collector will be invoked on the session.
-     *
-     * @var float
-     */
-    protected $garbageCollectionProbability = 0.1;
-
-    /**
-     * The inactivity timeout until the session will be invalidated.
-     *
-     * @var integer
-     */
-    protected $inactivityTimeout = 1440;
+    const DEFAULT_GARBAGE_COLLECTION_PROBABILITY = 0.1;
 
     /**
      * Initialize the default session settings.
      *
+     * @return void
      */
     public function __construct()
     {
-        $this->sessionCookieLifetime = time() + 86400;
+        // initialize the default values
+        $this->setSessionCookieLifetime(86400);
+        $this->setSessionName(DefaultSessionSettings::DEFAULT_SESSION_NAME);
+        $this->setSessionFilePrefix(DefaultSessionSettings::DEFAULT_SESSION_FILE_PREFIX);
+        $this->setSessionMaximumAge(0);
+        $this->setSessionCookieDomain(Cookie::LOCALHOST);
+        $this->setSessionCookiePath(DefaultSessionSettings::DEFAULT_SESSION_COOKIE_PATH);
+        $this->setSessionCookieSecure(false);
+        $this->setSessionCookieHttpOnly(false);
+        $this->setGarbageCollectionProbability(DefaultSessionSettings::DEFAULT_GARBAGE_COLLECTION_PROBABILITY);
+        $this->setInactivityTimeout(DefaultSessionSettings::DEFAULT_INACTIVITY_TIMEOUT);
     }
 
     /**
@@ -148,6 +113,28 @@ class DefaultSessionSettings implements SessionSettings
     }
 
     /**
+     * Set the session file prefix we use.
+     *
+     * @param string $sessionFilePrefix The session file prefix
+     *
+     * @return void
+     */
+    public function setSessionFilePrefix($sessionFilePrefix)
+    {
+        $this->sessionFilePrefix = $sessionFilePrefix;
+    }
+
+    /**
+     * Returns the session file prefix to use.
+     *
+     * @return string The session file prefix
+     */
+    public function getSessionFilePrefix()
+    {
+        return $this->sessionFilePrefix;
+    }
+
+    /**
      * Set the default path to persist sessions.
      *
      * @param string $sessionSavePath The default path to persist sessions
@@ -170,6 +157,18 @@ class DefaultSessionSettings implements SessionSettings
     }
 
     /**
+     * Sets the session cookie lifetime.
+     *
+     * @param integer $sessionCookieLifetime The session cookie lifetime
+     *
+     * @return void
+     */
+    public function setSessionCookieLifetime($sessionCookieLifetime)
+    {
+        $this->sessionCookieLifetime = time() + $sessionCookieLifetime;
+    }
+
+    /**
      * Returns the session cookie lifetime.
      *
      * @return integer The session cookie lifetime
@@ -177,6 +176,18 @@ class DefaultSessionSettings implements SessionSettings
     public function getSessionCookieLifetime()
     {
         return $this->sessionCookieLifetime;
+    }
+
+    /**
+     * Sets the number of seconds until the session expires, if defined.
+     *
+     * @param integer $sessionMaximumAge The maximum age in seconds, or NULL if none has been defined.
+     *
+     * @return void
+     */
+    public function setSessionMaximumAge($sessionMaximumAge)
+    {
+        $this->sessionMaximumAge = $sessionMaximumAge;
     }
 
     /**
@@ -190,6 +201,18 @@ class DefaultSessionSettings implements SessionSettings
     }
 
     /**
+     * Sets the cookie domain set for the session.
+     *
+     * @param string $sessionCookieDomain The cookie domain set for the session
+     *
+     * @return void
+     */
+    public function setSessionCookieDomain($sessionCookieDomain)
+    {
+        $this->sessionCookieDomain = $sessionCookieDomain;
+    }
+
+    /**
      * Returns the cookie domain set for the session.
      *
      * @return string The cookie domain set for the session
@@ -197,6 +220,18 @@ class DefaultSessionSettings implements SessionSettings
     public function getSessionCookieDomain()
     {
         return $this->sessionCookieDomain;
+    }
+
+    /**
+     * Sets the cookie path set for the session.
+     *
+     * @param string $sessionCookiePath The cookie path set for the session
+     *
+     * @return void
+     */
+    public function setSessionCookiePath($sessionCookiePath)
+    {
+        $this->sessionCookiePath = $sessionCookiePath;
     }
 
     /**
@@ -210,6 +245,18 @@ class DefaultSessionSettings implements SessionSettings
     }
 
     /**
+     * Sets the flag that the session cookie should only be set in a secure connection.
+     *
+     * @param boolean $sessionCookieSecure TRUE if a secure cookie should be set, else FALSE
+     *
+     * @return void
+     */
+    public function setSessionCookieSecure($sessionCookieSecure)
+    {
+        $this->sessionCookieSecure = $sessionCookieSecure;
+    }
+
+    /**
      * Returns the flag that the session cookie should only be set in a secure connection.
      *
      * @return boolean TRUE if a secure cookie should be set, else FALSE
@@ -217,6 +264,18 @@ class DefaultSessionSettings implements SessionSettings
     public function getSessionCookieSecure()
     {
         return $this->sessionCookieSecure;
+    }
+
+    /**
+     * Sets the flag if the session should set a Http only cookie.
+     *
+     * @param boolean $sessionCookieHttpOnly TRUE if a Http only cookie should be used
+     *
+     * @return void
+     */
+    public function setSessionCookieHttpOnly($sessionCookieHttpOnly)
+    {
+        $this->sessionCookieHttpOnly = $sessionCookieHttpOnly;
     }
 
     /**
@@ -230,6 +289,18 @@ class DefaultSessionSettings implements SessionSettings
     }
 
     /**
+     * Sets the probability the garbage collector will be invoked on the session.
+     *
+     * @param float $garbageCollectionProbability The garbage collector probability
+     *
+     * @return void
+     */
+    public function setGarbageCollectionProbability($garbageCollectionProbability)
+    {
+        $this->garbageCollectionProbability = $garbageCollectionProbability;
+    }
+
+    /**
      * Returns the probability the garbage collector will be invoked on the session.
      *
      * @return float The garbage collector probability
@@ -240,6 +311,18 @@ class DefaultSessionSettings implements SessionSettings
     }
 
     /**
+     * Sets the inactivity timeout until the session will be invalidated.
+     *
+     * @param integer $inactivityTimeout The inactivity timeout in seconds
+     *
+     * @return void
+     */
+    public function setInactivityTimeout($inactivityTimeout)
+    {
+        $this->inactivityTimeout = $inactivityTimeout;
+    }
+
+    /**
      * Returns the inactivity timeout until the session will be invalidated.
      *
      * @return integer The inactivity timeout in seconds
@@ -247,5 +330,64 @@ class DefaultSessionSettings implements SessionSettings
     public function getInactivityTimeout()
     {
         return $this->inactivityTimeout;
+    }
+
+    /**
+     * Merges the values of the passed settings into this instance and overwrites the one of this instance.
+     *
+     * @param \TechDivision\ServletContext\ServletContext $context The context we want to merge the session settings from
+     *
+     * @return void
+     */
+    public function mergeServletContext(ServletContext $context)
+    {
+
+        // check if the context has his own session parameters
+        if ($context->hasSessionParameters() === true) {
+
+            if (($garbageCollectionProbability = $context->getSessionParameter(ServletSession::GARBAGE_COLLECTION_PROBABILITY)) != null) {
+                $this->setGarbageCollectionProbability((float) $garbageCollectionProbability);
+            }
+
+            if (($sessionName = $context->getSessionParameter(ServletSession::SESSION_NAME)) != null) {
+                $this->setSessionName($sessionName);
+            }
+
+            if (($sessionFilePrefix = $context->getSessionParameter(ServletSession::SESSION_FILE_PREFIX)) != null) {
+                $this->setSessionFilePrefix($sessionFilePrefix);
+            }
+
+            if (($sessionSavePath = $context->getSessionParameter(ServletSession::SESSION_SAVE_PATH)) != null) {
+                $this->setSessionSavePath($sessionSavePath);
+            }
+
+            if (($sessionMaximumAge = $context->getSessionParameter(ServletSession::SESSION_MAXIMUM_AGE)) != null) {
+                $this->setSessionMaximumAge((integer) $sessionMaximumAge);
+            }
+
+            if (($sessionInactivityTimeout = $context->getSessionParameter(ServletSession::SESSION_INACTIVITY_TIMEOUT)) != null) {
+                $this->setInactivityTimeout((integer) $sessionInactivityTimeout);
+            }
+
+            if (($sessionCookieLifetime = $context->getSessionParameter(ServletSession::SESSION_COOKIE_LIFETIME)) != null) {
+                $this->setSessionCookieLifetime((integer) $sessionCookieLifetime);
+            }
+
+            if (($sessionCookieDomain = $context->getSessionParameter(ServletSession::SESSION_COOKIE_DOMAIN)) != null) {
+                $this->setSessionCookieDomain($sessionCookieDomain);
+            }
+
+            if (($sessionCookiePath = $context->getSessionParameter(ServletSession::SESSION_COOKIE_PATH)) != null) {
+                $this->setSessionCookiePath($sessionCookiePath);
+            }
+
+            if (($sessionCookieSecure = $context->getSessionParameter(ServletSession::SESSION_COOKIE_SECURE)) != null) {
+                $this->setSessionCookieSecure((boolean) $sessionCookieSecure);
+            }
+
+            if (($sessionCookieHttpOnly = $context->getSessionParameter(ServletSession::SESSION_COOKIE_HTTP_ONLY)) != null) {
+                $this->setSessionCookieHttpOnly((boolean) $sessionCookieHttpOnly);
+            }
+        }
     }
 }

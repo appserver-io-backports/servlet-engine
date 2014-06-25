@@ -1,7 +1,7 @@
 <?php
 
 /**
- * TechDivision\ServletEngine\ServletValve
+ * TechDivision\ServletEngine\PersistenceManager
  *
  * NOTICE OF LICENSE
  *
@@ -18,16 +18,11 @@
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-
 namespace TechDivision\ServletEngine;
 
-use \TechDivision\Servlet\ServletSession;
-use \TechDivision\Servlet\Http\HttpServletRequest;
-use \TechDivision\Servlet\Http\HttpServletResponse;
-
 /**
- * Valve implementation that will be executed by the servlet engine to handle
- * an incoming Http servlet request.
+ * A thread thats preinitialized session instances and adds them to the
+ * the session pool.
  *
  * @category  Appserver
  * @package   TechDivision_ServletEngine
@@ -36,19 +31,32 @@ use \TechDivision\Servlet\Http\HttpServletResponse;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class ServletValve
+interface PersistenceManager
 {
 
     /**
-     * Load the actual context instance, the servlet and handle the request.
+     * Initializes the persistence manager instance and unpersists the all sessions that has
+     * been used during the time defined with the last inactivity timeout defined in the
+     * session configuration.
      *
-     * @param \TechDivision\Servlet\ServletRequest  $servletRequest  The request instance
-     * @param \TechDivision\Servlet\ServletResponse $servletResponse The response instance
+     * If the session data could not be loaded, because the files data is corrupt, the
+     * file with the session data will be deleted.
      *
      * @return void
      */
-    public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
-    {
-        $servletRequest->getContext()->locate($servletRequest)->service($servletRequest, $servletResponse);
-    }
+    public function initialize();
+
+    /**
+     * Starts the persistence manager.
+     *
+     * @return void
+     */
+    public function start();
+
+    /**
+     * Stops the persistence manager.
+     *
+     * @return void
+     */
+    public function stop();
 }

@@ -83,7 +83,7 @@ class StandardGarbageCollector extends \Thread implements GarbageCollector
     /**
      * Injects the session settings.
      *
-     * @param \TechDivision\ServletEngine\SessionSettings $settings Settings for the session handling
+     * @param \TechDivision\ServletEngine\SessionSettings $sessionSettings Settings for the session handling
      *
      * @return void
      */

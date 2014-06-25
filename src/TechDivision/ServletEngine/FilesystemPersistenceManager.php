@@ -139,7 +139,7 @@ class FilesystemPersistenceManager extends \Thread implements PersistenceManager
     /**
      * Injects the session settings.
      *
-     * @param \TechDivision\ServletEngine\SessionSettings $settings Settings for the session handling
+     * @param \TechDivision\ServletEngine\SessionSettings $sessionSettings Settings for the session handling
      *
      * @return void
      */

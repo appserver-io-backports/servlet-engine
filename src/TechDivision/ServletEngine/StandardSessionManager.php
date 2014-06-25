@@ -72,7 +72,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     /**
      * Injects the session settings.
      *
-     * @param \TechDivision\ServletEngine\SessionSettings $settings Settings for the session handling
+     * @param \TechDivision\ServletEngine\SessionSettings $sessionSettings Settings for the session handling
      *
      * @return void
      */

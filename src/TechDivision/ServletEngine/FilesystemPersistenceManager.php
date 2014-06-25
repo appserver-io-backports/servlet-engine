@@ -314,6 +314,7 @@ class FilesystemPersistenceManager extends \Thread implements PersistenceManager
             return;
         }
 
+        // set the umask that is necessary to create the directory
         $this->initUmask();
 
         // create the directory we want to store the sessions in

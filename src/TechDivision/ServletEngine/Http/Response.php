@@ -228,16 +228,17 @@ class Response implements HttpServletResponse
     }
 
     /**
-     * Adds a header to array
+     * Adds a header to the internal array.
      *
-     * @param string     $name  The header label e.g. Accept or Content-Length
-     * @param string|int $value The header value
+     * @param string     $name   The header label e.g. Accept or Content-Length
+     * @param string|int $value  The header value
+     * @param boolean    $append If TRUE and a header with the passed name already exists, the value will be appended
      *
      * @return void
      */
-    public function addHeader($name, $value)
+    public function addHeader($name, $value, $append = false)
     {
-        $this->getHttpResponse()->addHeader($name, $value);
+        $this->getHttpResponse()->addHeader($name, $value, $append);
     }
 
     /**

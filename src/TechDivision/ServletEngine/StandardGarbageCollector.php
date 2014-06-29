@@ -197,9 +197,6 @@ class StandardGarbageCollector extends \Thread implements GarbageCollector
                             // first we've to remove the session from the manager
                             $this->getSessions()->remove($session->getId());
 
-                            // then we remove the session checksum
-                            $this->getChecksums()->remove($id);
-
                             // destroy the session if not already done
                             if ($session->getId() != null) {
                                 $session->destroy(sprintf('Session %s was inactive for %s seconds, more than the configured timeout of %s seconds.', $session->getId(), $lastActivitySecondsAgo, $inactivityTimeout));

@@ -166,7 +166,7 @@ class Response implements HttpServletResponse
      */
     public function resetBodyStream()
     {
-        return $this->getHttpResponse()->resetBodyStream();
+        $this->getHttpResponse()->resetBodyStream();
     }
 
     /**
@@ -203,6 +203,18 @@ class Response implements HttpServletResponse
     public function copyBodyStream($sourceStream, $maxlength = null, $offset = null)
     {
         $this->getHttpResponse()->copyBodyStream($sourceStream, $maxlength, $offset);
+    }
+
+    /**
+     * Resetss the stream resource pointing to body content.
+     *
+     * @param resource $bodyStream The body content stream resource
+     *
+     * @return void
+     */
+    public function setBodyStream($bodyStream)
+    {
+        $this->getHttpResponse()->setBodyStream($bodyStream);
     }
 
     /**

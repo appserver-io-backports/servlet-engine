@@ -50,10 +50,28 @@ class ServletValve
     public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
     {
 
-        // load the servlet context
-        $servletContext = $servletRequest->getContext()->getServletContext();
+        $context = $servletRequest->getContext();
 
-        // locate and service the servlet
-        $servletContext->locate($servletRequest)->service($servletRequest, $servletResponse);
+        $context->synchronized(function ($self, $request, $response) {
+
+            $self->servletRequest = $request;
+            $self->servletResponse = $response;
+
+            $self->done = true;
+            $self->notify();
+
+            $self->wait();
+
+            foreach ($self->servletResponse->getHeaders() as $header => $value) {
+                $response->addHeader($header, $value);
+            }
+
+            foreach ($self->servletResponse->getCookies() as $cookie => $value) {
+                $response->addCookie($cookie, $value);
+            }
+
+            $response->appendBodyStream($self->bodyStream);
+
+        }, $context, $servletRequest, $servletResponse);
     }
 }

@@ -241,6 +241,18 @@ class Request implements HttpServletRequest
     }
 
     /**
+     * Resets the stream resource pointing to body content.
+     *
+     * @param resource $bodyStream The body content stream resource
+     *
+     * @return void
+     */
+    public function setBodyStream($bodyStream)
+    {
+        $this->getHttpRequest()->setBodyStream($bodyStream);
+    }
+
+    /**
      * Set protocol version
      *
      * @param string $version The http protocol version
@@ -489,7 +501,7 @@ class Request implements HttpServletRequest
      *
      * @return void
      */
-    public function setHeaders($headers)
+    public function setHeaders(array $headers)
     {
         $this->getHttpRequest()->setHeaders($headers);
     }
@@ -625,6 +637,19 @@ class Request implements HttpServletRequest
     {
         return $this->getServerVar(ServerVars::X_REQUEST_URI);
     }
+
+    /**
+     * Sets the URI.
+     *
+     * @param string $uri The uri
+     *
+     * @return void
+     */
+    public function setUri($uri)
+    {
+        $this->getHttpRequest()->setUri($uri);
+    }
+
     /**
      * Returns request method
      *
@@ -633,6 +658,23 @@ class Request implements HttpServletRequest
     public function getMethod()
     {
         return $this->getServerVar(ServerVars::REQUEST_METHOD);
+    }
+
+    /**
+     * Sets the method to be performed on the resource identified by the
+     * Request-URI.
+     *
+     * While HTTP method names are typically all uppercase characters, HTTP
+     * method names are case-sensitive and thus implementations SHOULD NOT
+     * modify the given string.
+     *
+     * @param string $method Case-insensitive method
+     *
+     * @return void
+     */
+    public function setMethod($method)
+    {
+        $this->getHttpRequest()->setMethod($method);
     }
 
     /**

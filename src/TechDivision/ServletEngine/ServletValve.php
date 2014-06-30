@@ -49,6 +49,11 @@ class ServletValve
      */
     public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
     {
-        $servletRequest->getContext()->locate($servletRequest)->service($servletRequest, $servletResponse);
+
+        // load the servlet context
+        $servletContext = $servletRequest->getContext()->getServletContext();
+
+        // locate and service the servlet
+        $servletContext->locate($servletRequest)->service($servletRequest, $servletResponse);
     }
 }

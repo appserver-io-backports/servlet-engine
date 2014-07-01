@@ -27,6 +27,7 @@ use TechDivision\Http\HttpProtocol;
 use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpServletResponse;
 use TechDivision\Storage\StackableStorage;
+use TechDivision\Storage\GenericStackable;
 
 /**
  * A servlet request implementation.
@@ -39,7 +40,7 @@ use TechDivision\Storage\StackableStorage;
  * @license    http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link       http://www.appserver.io
  */
-class Response extends \Stackable implements HttpServletResponse
+class Response extends GenericStackable implements HttpServletResponse
 {
 
     /**

@@ -56,6 +56,19 @@ class Response extends \Stackable implements HttpServletResponse
      */
     protected $httpResponse;
 
+    /**
+     * The body stream, a string because we can't serialize memory stream here.
+     *
+     * @var string
+     */
+    protected $bodyStream;
+
+
+    /**
+     * Initialize the servlet response.
+     *
+     * @return void
+     */
     public function __construct()
     {
         $this->cookies = new StackableStorage();
@@ -109,8 +122,6 @@ class Response extends \Stackable implements HttpServletResponse
      */
     public function addCookie(Cookie $cookie)
     {
-        error_log(__METHOD__ . ':' . __LINE__);
-        error_log(print_r($cookie, true));
         $this->cookies->set(sizeof($this->cookies) + 1, $cookie);
     }
 
@@ -125,7 +136,7 @@ class Response extends \Stackable implements HttpServletResponse
     public function hasCookie($cookieName)
     {
         foreach ($this->getCookies() as $cookie) {
-            if ($cookie->getName() === $cookieName) {
+            if ($cookie instanceof Cookie && $cookie->getName() === $cookieName) {
                 return true;
             }
         }
@@ -142,7 +153,7 @@ class Response extends \Stackable implements HttpServletResponse
     public function getCookie($cookieName)
     {
         foreach ($this->getCookies() as $cookie) {
-            if ($cookie != null && $cookie->getName() === $cookieName) {
+            if ($cookie instanceof Cookie && $cookie->getName() === $cookieName) {
                 return $cookie;
             }
         }
@@ -165,7 +176,7 @@ class Response extends \Stackable implements HttpServletResponse
      */
     public function getBodyContent()
     {
-        return $this->getHttpResponse()->getBodyContent();
+        return $this->bodyStream;
     }
 
     /**
@@ -175,7 +186,7 @@ class Response extends \Stackable implements HttpServletResponse
      */
     public function resetBodyStream()
     {
-        $this->getHttpResponse()->resetBodyStream();
+        $this->bodyStream = '';
     }
 
     /**
@@ -185,7 +196,7 @@ class Response extends \Stackable implements HttpServletResponse
      */
     public function getBodyStream()
     {
-        return $this->getHttpResponse()->getBodyStream();
+        return $this->bodyStream;
     }
 
     /**
@@ -197,7 +208,7 @@ class Response extends \Stackable implements HttpServletResponse
      */
     public function appendBodyStream($content)
     {
-        $this->getHttpResponse()->appendBodyStream($content);
+        $this->bodyStream .= $content;
     }
 
     /**
@@ -209,9 +220,10 @@ class Response extends \Stackable implements HttpServletResponse
      *
      * @return integer The total number of bytes copied
      */
-    public function copyBodyStream($sourceStream, $maxlength = null, $offset = null)
+    public function copyBodyStream($sourceStream, $maxlength = null, $offset = 0)
     {
-        $this->getHttpResponse()->copyBodyStream($sourceStream, $maxlength, $offset);
+        $this->bodyStream = substr($sourceStream, $offset, $maxlength);
+        return strlen($this->bodyStream);
     }
 
     /**
@@ -223,7 +235,7 @@ class Response extends \Stackable implements HttpServletResponse
      */
     public function setBodyStream($bodyStream)
     {
-        $this->getHttpResponse()->setBodyStream($bodyStream);
+        $this->copyBodyStream($bodyStream);
     }
 
     /**

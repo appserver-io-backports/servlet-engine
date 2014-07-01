@@ -50,26 +50,36 @@ class ServletValve
     public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
     {
 
+        // load the application context
         $context = $servletRequest->getContext();
 
+        // we need a synchronized context here
         $context->synchronized(function ($self, $request, $response) {
 
+            // pass servlet requset/response to application
             $self->servletRequest = $request;
             $self->servletResponse = $response;
 
-            $self->done = true;
+            // set the flag that a new request has to be handled
+            $self->handleRequest = true;
+
+            // notify the application because it waits
             $self->notify();
 
+            // wait until the application sends us a notification with notify()
             $self->wait();
 
+            // copy the headers back to the local request
             foreach ($self->servletResponse->getHeaders() as $header => $value) {
                 $response->addHeader($header, $value);
             }
 
+            // copy the cookies back to the local request
             foreach ($self->servletResponse->getCookies() as $cookie => $value) {
                 $response->addCookie($cookie, $value);
             }
 
+            // copy the body stream
             $response->appendBodyStream($self->bodyStream);
 
         }, $context, $servletRequest, $servletResponse);

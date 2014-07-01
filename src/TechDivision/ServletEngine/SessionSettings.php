@@ -14,6 +14,8 @@
 
 namespace TechDivision\ServletEngine;
 
+use TechDivision\Servlet\ServletContext;
+
 /**
  * Interface for all session storage implementation.
  *
@@ -91,4 +93,13 @@ interface SessionSettings
      * @return integer The inactivity timeout in seconds
      */
     public function getInactivityTimeout();
+
+    /**
+     * Merges the values of the passed settings into this instance and overwrites the one of this instance.
+     *
+     * @param \TechDivision\ServletContext\ServletContext $context The context we want to merge the session settings from
+     *
+     * @return void
+     */
+    public function mergeServletContext(ServletContext $context);
 }

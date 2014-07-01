@@ -84,13 +84,6 @@ class Request implements HttpServletRequest
     protected $servletPath;
 
     /**
-     * The context that allows access to session and server information.
-     *
-     * @var \TechDivision\ServletEngine\Http\RequestContext
-     */
-    protected $context;
-
-    /**
      * The Http request instance.
      *
      * @var \TechDivision\Http\HttpRequestInteface
@@ -118,6 +111,8 @@ class Request implements HttpServletRequest
      */
     protected $dispatched = false;
 
+    protected $requestHandler;
+
     /**
      * Injects the context that allows access to session and
      * server information.
@@ -126,9 +121,9 @@ class Request implements HttpServletRequest
      *
      * @return void
      */
-    public function injectContext(Context $context)
+    public function injectRequestHandler($requestHandler)
     {
-        $this->context = $context;
+        $this->requestHandler = $requestHandler;
     }
 
     /**
@@ -173,7 +168,18 @@ class Request implements HttpServletRequest
      */
     public function getContext()
     {
-        return $this->context;
+        return $this->getRequestHandler()->getApplication();
+    }
+
+    /**
+     * Returns the context that allows access to session and
+     * server information.
+     *
+     * @return \TechDivision\ServletEngine\Http\RequestContext The request context
+     */
+    public function getRequestHandler()
+    {
+        return $this->requestHandler;
     }
 
     /**

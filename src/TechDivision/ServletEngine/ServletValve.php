@@ -51,24 +51,10 @@ class ServletValve
     {
 
         // load the application context
-        $context = $servletRequest->getContext();
+        $context = $servletRequest->getRequestHandler();
 
-        // we need a synchronized context here
-        $context->synchronized(function ($self) use ($servletRequest, $servletResponse) {
-
-            // pass servlet requset/response to application
-            $self->servletRequest = $servletRequest;
-            $self->servletResponse = $servletResponse;
-
-            // set the flag that a new request has to be handled
-            $self->handleRequest = true;
-
-            // notify the application because it waits
-            $self->notify();
-
-            // wait until the application sends us a notification with notify()
-            $self->wait();
-
-        }, $context);
+        // notify the application because it waits
+        $context->handle($servletRequest, $servletResponse);
+        $context->join();
     }
 }

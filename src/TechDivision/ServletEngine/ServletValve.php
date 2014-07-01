@@ -69,18 +69,22 @@ class ServletValve
             // wait until the application sends us a notification with notify()
             $self->wait();
 
+            /*
             // copy the headers back to the local request
             foreach ($self->servletResponse->getHeaders() as $header => $value) {
                 $response->addHeader($header, $value);
             }
 
             // copy the cookies back to the local request
-            foreach ($self->servletResponse->getCookies() as $cookie => $value) {
-                $response->addCookie($cookie, $value);
+            foreach ($self->servletResponse->getCookies() as $cookie) {
+                if ($cookie instanceof TechDivision\Servlet\Http\Cookie) {
+                    $response->addCookie($cookie);
+                }
             }
+            */
 
             // copy the body stream
-            $response->appendBodyStream($self->bodyStream);
+            $response->setBodyStream($self->bodyStream);
 
         }, $context, $servletRequest, $servletResponse);
     }

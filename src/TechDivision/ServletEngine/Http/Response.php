@@ -26,6 +26,7 @@ use TechDivision\Http\HttpResponseInterface;
 use TechDivision\Http\HttpProtocol;
 use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpServletResponse;
+use TechDivision\Storage\StackableStorage;
 
 /**
  * A servlet request implementation.
@@ -38,14 +39,15 @@ use TechDivision\Servlet\Http\HttpServletResponse;
  * @license    http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link       http://www.appserver.io
  */
-class Response implements HttpServletResponse
+class Response extends \Stackable implements HttpServletResponse
 {
 
     /**
+     * The cookies stored in the response.
      *
-     * @var array
+     * @var \TechDivision\Storage\StackableStorage
      */
-    protected $cookies = array();
+    protected $cookies;
 
     /**
      * The Http response instance.
@@ -53,6 +55,11 @@ class Response implements HttpServletResponse
      * @var \TechDivision\Http\HttpResponseInteface
      */
     protected $httpResponse;
+
+    public function __construct()
+    {
+        $this->cookies = new StackableStorage();
+    }
 
     /**
      * Injects the Http response instance.
@@ -102,7 +109,9 @@ class Response implements HttpServletResponse
      */
     public function addCookie(Cookie $cookie)
     {
-        $this->cookies[] = $cookie;
+        error_log(__METHOD__ . ':' . __LINE__);
+        error_log(print_r($cookie, true));
+        $this->cookies->set(sizeof($this->cookies) + 1, $cookie);
     }
 
     /**
@@ -133,7 +142,7 @@ class Response implements HttpServletResponse
     public function getCookie($cookieName)
     {
         foreach ($this->getCookies() as $cookie) {
-            if ($cookie->getName() === $cookieName) {
+            if ($cookie != null && $cookie->getName() === $cookieName) {
                 return $cookie;
             }
         }

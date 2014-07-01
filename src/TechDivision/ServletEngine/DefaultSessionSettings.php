@@ -165,7 +165,7 @@ class DefaultSessionSettings extends GenericStackable implements SessionSettings
      */
     public function setSessionCookieLifetime($sessionCookieLifetime)
     {
-        $this->sessionCookieLifetime = time() + $sessionCookieLifetime;
+        $this->sessionCookieLifetime = $sessionCookieLifetime;
     }
 
     /**

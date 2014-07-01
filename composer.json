@@ -4,6 +4,7 @@
     "description": "Servlet engine default implementation.",
     "homepage": "https://github.com/techdivision/TechDivision_ServletEngine",
     "license": ["OSL-3.0"],
+    "minimum-stability": "dev",
     "repositories": [
         {
             "type": "vcs",

@@ -288,6 +288,18 @@ class Response implements HttpServletResponse
     }
 
     /**
+     * Checks if header exists by given name.
+     *
+     * @param string $name The header name to check
+     *
+     * @return boolean TRUE if the header is available, else FALSE
+     */
+    public function hasHeader($name)
+    {
+        return $this->getHttpResponse()->hasHeader($name);
+    }
+
+    /**
      * Set's the http response status code
      *
      * @param int $code The status code to set

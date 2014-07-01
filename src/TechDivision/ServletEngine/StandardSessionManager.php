@@ -195,7 +195,13 @@ class StandardSessionManager extends GenericStackable implements SessionManager
 
         // copy the default session configuration for lifetime from the settings
         if ($lifetime == null) {
-            $lifetime = $this->getSessionSettings()->getSessionCookieLifetime();
+
+            // create a the actual date and add the cookie lifetime
+            $dateTime = new \DateTime();
+            $dateTime->modify("+{$this->getSessionSettings()->getSessionCookieLifetime()} second");
+
+            // set the cookie lifetime as UNIX timestamp
+            $lifetime = $dateTime->getTimestamp();
         }
 
         // copy the default session configuration for maximum from the settings

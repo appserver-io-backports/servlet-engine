@@ -223,7 +223,24 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function copyBodyStream($sourceStream, $maxlength = null, $offset = 0)
     {
-        $this->bodyStream = substr($sourceStream, $offset, $maxlength);
+
+        // check if a stream has been passed
+        if (is_resource($sourceStream)) {
+            if ($offset && $maxlength) {
+                $this->bodyStream = stream_get_contents($sourceStream, $maxlength, $offset);
+            }
+            if (!$offset && $maxlength) {
+                $this->bodyStream = stream_get_contents($sourceStream, $maxlength);
+            }
+            if (!$offset && !$maxlength) {
+                $this->bodyStream = stream_get_contents($sourceStream);
+            }
+        } else { // if not, copy the string
+            $this->bodyStream = substr($sourceStream, $offset, $maxlength);
+
+        }
+
+        // return the sring length
         return strlen($this->bodyStream);
     }
 

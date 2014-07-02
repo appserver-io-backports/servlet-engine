@@ -26,7 +26,6 @@ use TechDivision\Http\HttpResponseInterface;
 use TechDivision\Http\HttpProtocol;
 use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpServletResponse;
-use TechDivision\Storage\StackableStorage;
 use TechDivision\Storage\GenericStackable;
 
 /**
@@ -46,7 +45,7 @@ class Response extends GenericStackable implements HttpServletResponse
     /**
      * The cookies stored in the response.
      *
-     * @var \TechDivision\Storage\StackableStorage
+     * @var \TechDivision\Storage\GenericStackable
      */
     protected $cookies;
 
@@ -72,7 +71,7 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function __construct()
     {
-        $this->cookies = new StackableStorage();
+        $this->cookies = new GenericStackable();
     }
 
     /**
@@ -123,7 +122,7 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function addCookie(Cookie $cookie)
     {
-        $this->cookies->set(sizeof($this->cookies) + 1, $cookie);
+        $this->cookies[] = $cookie;
     }
 
     /**
@@ -137,7 +136,7 @@ class Response extends GenericStackable implements HttpServletResponse
     public function hasCookie($cookieName)
     {
         foreach ($this->getCookies() as $cookie) {
-            if ($cookie instanceof Cookie && $cookie->getName() === $cookieName) {
+            if ($cookie->getName() === $cookieName) {
                 return true;
             }
         }
@@ -154,7 +153,7 @@ class Response extends GenericStackable implements HttpServletResponse
     public function getCookie($cookieName)
     {
         foreach ($this->getCookies() as $cookie) {
-            if ($cookie instanceof Cookie && $cookie->getName() === $cookieName) {
+            if ($cookie->getName() === $cookieName) {
                 return $cookie;
             }
         }
@@ -379,6 +378,6 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function getStatusReasonPhrase()
     {
-        return $this->$this->getHttpResponse()->getStatusReasonPhrase();
+        return $this->getHttpResponse()->getStatusReasonPhrase();
     }
 }

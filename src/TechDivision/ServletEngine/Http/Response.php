@@ -26,6 +26,7 @@ use TechDivision\Http\HttpResponseInterface;
 use TechDivision\Http\HttpProtocol;
 use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpServletResponse;
+use TechDivision\Http\HttpCookieInterface;
 
 /**
  * A servlet request implementation.
@@ -40,12 +41,6 @@ use TechDivision\Servlet\Http\HttpServletResponse;
  */
 class Response implements HttpServletResponse
 {
-
-    /**
-     *
-     * @var array
-     */
-    protected $cookies = array();
 
     /**
      * The Http response instance.
@@ -94,15 +89,15 @@ class Response implements HttpServletResponse
     }
 
     /**
-     * Adds a cookie
+     * Adds a cookie.
      *
-     * @param \TechDivision\Servlet\Http\Cookie $cookie The cookie instance to add
+     * @param \TechDivision\Http\HttpCookieInterface $cookie The cookie instance to add
      *
      * @return void
      */
-    public function addCookie(Cookie $cookie)
+    public function addCookie(HttpCookieInterface $cookie)
     {
-        $this->cookies[] = $cookie;
+        $this->getHttpResponse()->addCookie($cookie);
     }
 
     /**
@@ -115,12 +110,7 @@ class Response implements HttpServletResponse
      */
     public function hasCookie($cookieName)
     {
-        foreach ($this->getCookies() as $cookie) {
-            if ($cookie->getName() === $cookieName) {
-                return true;
-            }
-        }
-        return false;
+        return $this->getHttpResponse()->hasCookie($cookieName);
     }
 
     /**
@@ -132,11 +122,7 @@ class Response implements HttpServletResponse
      */
     public function getCookie($cookieName)
     {
-        foreach ($this->getCookies() as $cookie) {
-            if ($cookie->getName() === $cookieName) {
-                return $cookie;
-            }
-        }
+        return $this->getHttpResponse()->getCookie($cookieName);
     }
 
     /**
@@ -146,7 +132,7 @@ class Response implements HttpServletResponse
      */
     public function getCookies()
     {
-        return $this->cookies;
+        return $this->getHttpResponse()->getCookies();
     }
 
     /**

@@ -21,13 +21,14 @@
 
 namespace TechDivision\ServletEngine;
 
+use \TechDivision\Http\HttpResponseStates;
 use \TechDivision\Servlet\ServletSession;
 use \TechDivision\Servlet\Http\HttpServletRequest;
 use \TechDivision\Servlet\Http\HttpServletResponse;
 
 /**
  * Valve implementation that will be executed by the servlet engine to handle
- * an incoming Http servlet request.
+ * an incoming HTTP servlet request.
  *
  * @category  Appserver
  * @package   TechDivision_ServletEngine
@@ -40,7 +41,8 @@ class ServletValve
 {
 
     /**
-     * Load the actual context instance, the servlet and handle the request.
+     * Processes the request by invoking the request handler that executes the servlet
+     * in a protected context.
      *
      * @param \TechDivision\Servlet\ServletRequest  $servletRequest  The request instance
      * @param \TechDivision\Servlet\ServletResponse $servletResponse The response instance
@@ -53,8 +55,24 @@ class ServletValve
         // load the application context
         $context = $servletRequest->getRequestHandler();
 
-        // notify the application because it waits
-        $context->handle($servletRequest, $servletResponse);
-        $context->join();
+        // notify the application to handle the request
+        $context->synchronized(function ($self, $request, $response) {
+
+            // set the servlet/response intances
+            $self->servletRequest = $request;
+            $self->servletResponse = $response;
+
+            // set the flag to start request processing
+            $self->handleRequest = true;
+
+            // notify the request handler
+            $self->notify();
+
+        }, $context, $servletRequest, $servletResponse);
+
+        // wait until the response has been dispatched
+        while ($servletResponse->hasState(HttpResponseStates::DISPATCH) === false) {
+            usleep(10000);
+        }
     }
 }

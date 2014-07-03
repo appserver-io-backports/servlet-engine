@@ -111,6 +111,11 @@ class Request implements HttpServletRequest
      */
     protected $dispatched = false;
 
+    /**
+     * The request handler that handles the request.
+     *
+     * @var \TechDivision\ServletEngine\Http\RequestContext
+     */
     protected $requestHandler;
 
     /**
@@ -129,11 +134,11 @@ class Request implements HttpServletRequest
     /**
      * Injects the server variables.
      *
-     * @param array $serverVars The server variables
+     * @param \TechDivision\Storage\GenericStackable $serverVars The server variables
      *
      * @return void
      */
-    public function injectServerVars(array $serverVars)
+    public function injectServerVars($serverVars)
     {
         $this->serverVars = $serverVars;
     }
@@ -686,7 +691,7 @@ class Request implements HttpServletRequest
     /**
      * Returns the array with the server variables.
      *
-     * @return array The array with the server variables
+     * @return \TechDivision\Storage\GenericStackable The array with the server variables
      */
     public function getServerVars()
     {

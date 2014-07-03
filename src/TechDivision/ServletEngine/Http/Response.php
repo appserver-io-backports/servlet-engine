@@ -380,4 +380,38 @@ class Response extends GenericStackable implements HttpServletResponse
     {
         return $this->getHttpResponse()->getStatusReasonPhrase();
     }
+
+    /**
+     * Set's state of response
+     *
+     * @param int $state The state value
+     *
+     * @return void
+     */
+    public function setState($state)
+    {
+        $this->state = $state;
+    }
+
+    /**
+     * Return's the current state
+     *
+     * @return int
+     */
+    public function getState()
+    {
+        return $this->state;
+    }
+
+    /**
+     * Compares current state with given state
+     *
+     * @param int $state The state to compare with
+     *
+     * @return bool Wheater state is equal (true) or not (false)
+     */
+    public function hasState($state)
+    {
+        return ($this->state === $state);
+    }
 }

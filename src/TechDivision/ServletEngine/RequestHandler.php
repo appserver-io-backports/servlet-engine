@@ -22,6 +22,7 @@
 namespace TechDivision\ServletEngine;
 
 use TechDivision\Context\Context;
+use \TechDivision\Http\HttpResponseStates;
 use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
 
 /**
@@ -60,13 +61,26 @@ class RequestHandler extends \Thread implements Context
     protected $servletResponse;
 
     /**
+     * Flag to allow/disallow request handling.
+     *
+     * @return boolean
+     */
+    protected $handleRequest;
+
+    /**
      * Initializes the request handler with the application.
      *
      * @return \TechDivision\ApplicationServer\Interfaces\ApplicationInterface The application instance
      */
     public function __construct(ApplicationInterface $application)
     {
+
+        // initialize the request handlers application
         $this->application = $application;
+        $this->handleRequest = false;
+
+        // start the request processing
+        $this->start();
     }
 
     /**
@@ -79,22 +93,6 @@ class RequestHandler extends \Thread implements Context
     public function getAttribute($key)
     {
         // do nothing here, it's only to implement the Context interface
-    }
-
-    /**
-     * This is the main method to handle the an incoming request.
-     *
-     * @return void
-     */
-    protected function handle($servletRequest, $servletResponse)
-    {
-
-        // set the servlet/response intances
-        $this->servletRequest = $servletRequest;
-        $this->servletResponse = $servletResponse;
-
-        // start the request processing
-        $this->start();
     }
 
     /**
@@ -115,17 +113,40 @@ class RequestHandler extends \Thread implements Context
     public function run()
     {
 
-        // reset request/response instance
-        $application = $this->application;
-        $servletRequest = $this->servletRequest;
-        $servletResponse = $this->servletResponse;
+        while (true) {
 
-        // register the class loader again, because each thread has its own context
-        $application->registerClassLoaders();
+            // synchronize the response data
+            $this->synchronized(function ($self) {
 
-        // locate and service the servlet
-        $application->getServletContext()
-            ->locate($servletRequest)
-            ->service($servletRequest, $servletResponse);
+                // wait until we've to handle a new request
+                $self->wait();
+
+                // check if we've to handle a request
+                if ($self->handleRequest) {
+
+                    // reset request/response instance
+                    $application = $this->application;
+
+                    // register the class loader again, because each thread has its own context
+                    $application->registerClassLoaders();
+
+                    // synchronize the servlet request/response
+                    $servletRequest = $self->servletRequest;
+                    $servletResponse = $self->servletResponse;
+
+                    // locate and service the servlet
+                    $application->getServletContext()
+                        ->locate($servletRequest)
+                        ->service($servletRequest, $servletResponse);
+
+                    // set the request state to dispatched
+                    $servletResponse->setState(HttpResponseStates::DISPATCH);
+
+                    // reset the flag
+                    $self->handleRequest = false;
+                }
+
+            }, $this);
+        }
     }
 }

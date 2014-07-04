@@ -25,7 +25,6 @@ namespace TechDivision\ServletEngine\Http;
 use TechDivision\Storage\StackableStorage;
 use TechDivision\Storage\GenericStackable;
 use TechDivision\Servlet\ServletSession;
-use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Servlet\Http\HttpServletResponse;
 
@@ -62,8 +61,6 @@ class Session extends GenericStackable implements ServletSession
      * @param string           $path       The path describing the scope of this cookie
      * @param boolean          $secure     If this cookie should only be sent through a "secure" channel by the user agent
      * @param boolean          $httpOnly   If this cookie should only be used through the HTTP protocol
-     *
-     * @return void
      */
     public function __construct($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly)
     {

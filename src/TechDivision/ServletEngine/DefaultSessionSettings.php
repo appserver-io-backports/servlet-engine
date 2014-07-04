@@ -15,7 +15,7 @@
 
 namespace TechDivision\ServletEngine;
 
-use TechDivision\Servlet\Http\Cookie;
+use TechDivision\Http\HttpCookie;
 use TechDivision\Servlet\ServletSession;
 use TechDivision\Servlet\ServletContext;
 use TechDivision\Storage\GenericStackable;
@@ -72,8 +72,6 @@ class DefaultSessionSettings extends GenericStackable implements SessionSettings
 
     /**
      * Initialize the default session settings.
-     *
-     * @return void
      */
     public function __construct()
     {
@@ -82,7 +80,7 @@ class DefaultSessionSettings extends GenericStackable implements SessionSettings
         $this->setSessionName(DefaultSessionSettings::DEFAULT_SESSION_NAME);
         $this->setSessionFilePrefix(DefaultSessionSettings::DEFAULT_SESSION_FILE_PREFIX);
         $this->setSessionMaximumAge(0);
-        $this->setSessionCookieDomain(Cookie::LOCALHOST);
+        $this->setSessionCookieDomain(HttpCookie::LOCALHOST);
         $this->setSessionCookiePath(DefaultSessionSettings::DEFAULT_SESSION_COOKIE_PATH);
         $this->setSessionCookieSecure(false);
         $this->setSessionCookieHttpOnly(false);

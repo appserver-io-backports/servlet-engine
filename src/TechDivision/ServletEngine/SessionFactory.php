@@ -62,8 +62,6 @@ class SessionFactory extends \Thread
      * Initializes the session factory instance.
      *
      * @param \TechDivision\Storage\StorageInterface $sessionPool The session pool
-     *
-     * @return void
      */
     public function __construct(StorageInterface $sessionPool)
     {

@@ -104,8 +104,6 @@ class FilesystemPersistenceManager extends \Thread implements PersistenceManager
 
     /**
      * Initializes the session persistence manager.
-     *
-     * @return void
      */
     public function __construct()
     {

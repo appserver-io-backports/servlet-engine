@@ -24,7 +24,6 @@ namespace TechDivision\ServletEngine\Http;
 
 use TechDivision\Http\HttpResponseInterface;
 use TechDivision\Http\HttpProtocol;
-use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpServletResponse;
 use TechDivision\Http\HttpCookieInterface;
 

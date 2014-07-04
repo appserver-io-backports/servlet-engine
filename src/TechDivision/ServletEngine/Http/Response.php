@@ -24,7 +24,7 @@ namespace TechDivision\ServletEngine\Http;
 
 use TechDivision\Http\HttpResponseInterface;
 use TechDivision\Http\HttpProtocol;
-use TechDivision\Servlet\Http\Cookie;
+use TechDivision\Http\HttpCookieInterface;
 use TechDivision\Servlet\Http\HttpServletResponse;
 use TechDivision\Storage\GenericStackable;
 
@@ -116,11 +116,11 @@ class Response extends GenericStackable implements HttpServletResponse
     /**
      * Adds a cookie
      *
-     * @param \TechDivision\Servlet\Http\Cookie $cookie The cookie instance to add
+     * @param \TechDivision\Http\HttpCookieInterface $cookie The cookie instance to add
      *
      * @return void
      */
-    public function addCookie(Cookie $cookie)
+    public function addCookie(HttpCookieInterface $cookie)
     {
         $this->cookies[] = $cookie;
     }
@@ -148,7 +148,7 @@ class Response extends GenericStackable implements HttpServletResponse
      *
      * @param string $cookieName Name of the cookie to be checked
      *
-     * @return \TechDivision\Servlet\Http\Cookie $cookie The cookie instance
+     * @return \TechDivision\Http\HttpCookieInterface $cookie The cookie instance
      */
     public function getCookie($cookieName)
     {

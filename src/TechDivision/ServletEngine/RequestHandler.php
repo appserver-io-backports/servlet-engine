@@ -124,20 +124,27 @@ class RequestHandler extends \Thread implements Context
                 // check if we've to handle a request
                 if ($self->handleRequest) {
 
-                    // reset request/response instance
-                    $application = $this->application;
+                    try {
 
-                    // register the class loader again, because each thread has its own context
-                    $application->registerClassLoaders();
+                        // reset request/response instance
+                        $application = $this->application;
 
-                    // synchronize the servlet request/response
-                    $servletRequest = $self->servletRequest;
-                    $servletResponse = $self->servletResponse;
+                        // register the class loader again, because each thread has its own context
+                        $application->registerClassLoaders();
 
-                    // locate and service the servlet
-                    $application->getServletContext()
-                        ->locate($servletRequest)
-                        ->service($servletRequest, $servletResponse);
+                        // synchronize the servlet request/response
+                        $servletRequest = $self->servletRequest;
+                        $servletResponse = $self->servletResponse;
+
+                        // locate and service the servlet
+                        $application->getServletContext()
+                            ->locate($servletRequest)
+                            ->service($servletRequest, $servletResponse);
+
+                    } catch (\Exception $e) {
+                        $servletResponse->appendBodyStream($e->__toString());
+                        $servletResponse->setStatusCode(500);
+                    }
 
                     // set the request state to dispatched
                     $servletResponse->setState(HttpResponseStates::DISPATCH);

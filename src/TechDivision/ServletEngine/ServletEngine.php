@@ -28,6 +28,7 @@ use TechDivision\Servlet\Http\HttpServletResponse;
 use TechDivision\Server\Dictionaries\ModuleHooks;
 use TechDivision\Server\Dictionaries\ServerVars;
 use TechDivision\Server\Interfaces\ModuleInterface;
+use TechDivision\Server\Interfaces\RequestContextInterface;
 use TechDivision\Server\Interfaces\ServerContextInterface;
 use TechDivision\ServletEngine\Http\Session;
 use TechDivision\ServletEngine\Http\Request;
@@ -36,6 +37,8 @@ use TechDivision\ServletEngine\Http\HttpRequestContext;
 use TechDivision\ServletEngine\Authentication\AuthenticationValve;
 use TechDivision\ApplicationServer\Interfaces\ContextInterface;
 use TechDivision\ApplicationServer\Interfaces\ContainerInterface;
+use TechDivision\Connection\ConnectionRequestInterface;
+use TechDivision\Connection\ConnectionResponseInterface;
 
 /**
  * A servlet engine implementation.
@@ -150,57 +153,104 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             // set the servlet context
             $this->serverContext = $serverContext;
 
-            // initialize the valves that handles the requests
-            $this->valves[] = new AuthenticationValve();
-            $this->valves[] = new ServletValve();
-
-            // load the document root and the web servers virtual host configuration
-            $documentRoot = $serverContext->getServerConfig()->getDocumentRoot();
-
-            // prepare the handlers
-            foreach ($serverContext->getServerConfig()->getHandlers() as $extension => $handler) {
-                $this->handlers[$extension] = new Handler($handler['name']);
-            }
-
-            // prepare the virtual host configurations
-            foreach ($serverContext->getServerConfig()->getVirtualHosts() as $domain => $virtualHost) {
-
-                // prepare the applications base directory
-                $appBase = str_replace($documentRoot, '', $virtualHost['params']['documentRoot']);
-
-                // append the virtual host to the array
-                $this->virtualHosts[] = new VirtualHost($domain, $appBase);
-            }
-
-            // iterate over a applications vhost/alias configuration
-            foreach ($serverContext->getContainer()->getApplications() as $application) {
-
-                // iterate over the virtual hosts
-                foreach ($this->virtualHosts as $virtualHost) {
-
-                    // check if the virtual host match the application
-                    if ($virtualHost->match($application)) {
-
-                        // bind the virtual host to the application
-                        $application->addVirtualHost($virtualHost);
-
-                        // add the application to the internal array
-                        $this->applications['/^' . $virtualHost->getName() . '\/(([a-z0-9+\$_-]\.?)+)*\/?/'] = $application;
-                    }
-                }
-
-                // finally APPEND a wildcard pattern for each application to the patterns array
-                $this->applications['/^[a-z0-9-.]*\/' . $application->getName() . '\/(([a-z0-9+\$_-]\.?)+)*\/?/'] = $application;
-
-                // we want to prepare an request for each application and each worker
-                $this->requestHandlers['/' . $application->getName()] = new GenericStackable();
-                for ($i = 0; $i < 4; $i++) {
-                    $this->requestHandlers['/' . $application->getName()][$i] = new RequestHandler($application);
-                }
-            }
+            // initialize the servlet engine
+            $this->initValves();
+            $this->initHandlers();
+            $this->initVirtualHosts();
+            $this->initApplications();
+            $this->initRequestHandlers();
 
         } catch (\Exception $e) {
             throw new ModuleException($e);
+        }
+    }
+
+    /**
+     * Initialize the valves that handles the requests.
+     *
+     * @return void
+     */
+    public function initValves()
+    {
+        $this->valves[] = new AuthenticationValve();
+        $this->valves[] = new ServletValve();
+    }
+
+    /**
+     * Initialize the web server handlers.
+     *
+     * @return void
+     */
+    public function initHandlers()
+    {
+        foreach ($this->getServerContext()->getServerConfig()->getHandlers() as $extension => $handler) {
+            $this->handlers[$extension] = new Handler($handler['name']);
+        }
+    }
+
+    /**
+     * Initialize the configured virtual hosts.
+     *
+     * @return void
+     */
+    public function initVirtualHosts()
+    {
+        // load the document root and the web servers virtual host configuration
+        $documentRoot = $this->getServerContext()->getServerConfig()->getDocumentRoot();
+
+        // prepare the virtual host configurations
+        foreach ($this->getServerContext()->getServerConfig()->getVirtualHosts() as $domain => $virtualHost) {
+
+            // prepare the applications base directory
+            $appBase = str_replace($documentRoot, '', $virtualHost['params']['documentRoot']);
+
+            // append the virtual host to the array
+            $this->virtualHosts[] = new VirtualHost($domain, $appBase);
+        }
+    }
+
+    /**
+     * Initialize the applications.
+     *
+     * @return void
+     */
+    public function initApplications()
+    {
+        // iterate over a applications vhost/alias configuration
+        foreach ($this->getServerContext()->getContainer()->getApplications() as $application) {
+
+            // iterate over the virtual hosts
+            foreach ($this->virtualHosts as $virtualHost) {
+
+                // check if the virtual host match the application
+                if ($virtualHost->match($application)) {
+
+                    // bind the virtual host to the application
+                    $application->addVirtualHost($virtualHost);
+
+                    // add the application to the internal array
+                    $this->applications['/^' . $virtualHost->getName() . '\/(([a-z0-9+\$_-]\.?)+)*\/?/'] = $application;
+                }
+            }
+
+            // finally APPEND a wildcard pattern for each application to the patterns array
+            $this->applications['/^[a-z0-9-.]*\/' . $application->getName() . '\/(([a-z0-9+\$_-]\.?)+)*\/?/'] = $application;
+        }
+    }
+
+    /**
+     * Initialize the request handlers.
+     *
+     * @return void
+     */
+    public function initRequestHandlers()
+    {
+        // we want to prepare an request for each application and each worker
+        foreach ($this->getApplications() as $pattern => $application) {
+            $this->requestHandlers['/' . $application->getName()] = new GenericStackable();
+            for ($i = 0; $i < 4; $i++) {
+                $this->requestHandlers['/' . $application->getName()][$i] = new RequestHandler($application);
+            }
         }
     }
 
@@ -215,37 +265,40 @@ class ServletEngine extends GenericStackable implements ModuleInterface
     }
 
     /**
-     * Process the servlet engine.
+     * Process servlet request.
      *
-     * @param \TechDivision\Http\HttpRequestInterface  $request  The request object
-     * @param \TechDivision\Http\HttpResponseInterface $response The response object
-     * @param int                                      $hook     The current hook to process logic for
+     * @param \TechDivision\Connection\ConnectionRequestInterface     $request        A request object
+     * @param \TechDivision\Connection\ConnectionResponseInterface    $response       A response object
+     * @param \TechDivision\Server\Interfaces\RequestContextInterface $requestContext A requests context instance
+     * @param int                                                     $hook           The current hook to process logic for
      *
      * @return bool
      * @throws \TechDivision\Server\Exceptions\ModuleException
      */
-    public function process(HttpRequestInterface $request, HttpResponseInterface $response, $hook)
+    public function process( ConnectionRequestInterface $request, ConnectionResponseInterface $response,  RequestContextInterface $requestContext, $hook)
     {
 
         try {
+
+            // In php an interface is, by definition, a fixed contract. It is immutable.
+            // So we have to declair the right ones afterwards...
+            /** @var $request \TechDivision\Http\HttpRequestInterface */
+            /** @var $request \TechDivision\Http\HttpResponseInterface */
 
             // if false hook is comming do nothing
             if (ModuleHooks::REQUEST_POST !== $hook) {
                 return;
             }
 
-            // make server context local
-            $serverContext = $this->getServerContext();
-
             // check if we are the handler that has to process this request
-            if ($serverContext->getServerVar(ServerVars::SERVER_HANDLER) !== $this->getModuleName()) {
+            if ($requestContext->getServerVar(ServerVars::SERVER_HANDLER) !== $this->getModuleName()) {
                 return;
             }
 
             // intialize servlet session, request + response
             $servletRequest = new Request();
             $servletRequest->injectHttpRequest($request);
-            $servletRequest->injectServerVars($serverContext->getServerVars());
+            $servletRequest->injectServerVars($requestContext->getServerVars());
 
             // prepare the servlet request
             $this->prepareServletRequest($servletRequest);

@@ -60,8 +60,6 @@ class StandardGarbageCollector extends \Thread implements GarbageCollector
     /**
      * Initializes the session persistence manager with the session manager instance
      * we want to handle garbage collection for.
-     *
-     * @return void
      */
     public function __construct()
     {

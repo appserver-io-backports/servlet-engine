@@ -43,13 +43,6 @@ class Response extends GenericStackable implements HttpServletResponse
 {
 
     /**
-     * The cookies stored in the response.
-     *
-     * @var \TechDivision\Storage\GenericStackable
-     */
-    protected $cookies;
-
-    /**
      * The Http response instance.
      *
      * @var \TechDivision\Http\HttpResponseInteface
@@ -114,7 +107,7 @@ class Response extends GenericStackable implements HttpServletResponse
     }
 
     /**
-     * Adds a cookie
+     * Adds a cookie.
      *
      * @param \TechDivision\Http\HttpCookieInterface $cookie The cookie instance to add
      *
@@ -122,7 +115,7 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function addCookie(HttpCookieInterface $cookie)
     {
-        $this->cookies[] = $cookie;
+        $this->getHttpResponse()->addCookie($cookie);
     }
 
     /**
@@ -135,12 +128,7 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function hasCookie($cookieName)
     {
-        foreach ($this->getCookies() as $cookie) {
-            if ($cookie->getName() === $cookieName) {
-                return true;
-            }
-        }
-        return false;
+        return $this->getHttpResponse()->hasCookie($cookieName);
     }
 
     /**
@@ -152,11 +140,7 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function getCookie($cookieName)
     {
-        foreach ($this->getCookies() as $cookie) {
-            if ($cookie->getName() === $cookieName) {
-                return $cookie;
-            }
-        }
+        return $this->getHttpResponse()->getCookie($cookieName);
     }
 
     /**
@@ -166,7 +150,7 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function getCookies()
     {
-        return $this->cookies;
+        return $this->getHttpResponse()->getCookies();
     }
 
     /**
@@ -253,6 +237,18 @@ class Response extends GenericStackable implements HttpServletResponse
     public function setBodyStream($bodyStream)
     {
         $this->copyBodyStream($bodyStream);
+    }
+
+    /**
+     * Resets the stream resource pointing to body content.
+     *
+     * @param resource $bodyStream The body content stream resource
+     *
+     * @return void
+     */
+    public function setBodyStream($bodyStream)
+    {
+        $this->getHttpResponse()->setBodyStream($bodyStream);
     }
 
     /**

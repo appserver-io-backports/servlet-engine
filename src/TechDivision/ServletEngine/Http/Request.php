@@ -25,13 +25,13 @@ namespace TechDivision\ServletEngine\Http;
 use TechDivision\Context\Context;
 use TechDivision\Http\HttpRequestInterface;
 use TechDivision\Servlet\SessionUtils;
-use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Servlet\Http\HttpSessionWrapper;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Servlet\Http\HttpServletResponse;
 use TechDivision\Server\Dictionaries\ServerVars;
 use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
+use TechDivision\Http\HttpCookieInterface;
 
 /**
  * A Http servlet request implementation.
@@ -46,14 +46,6 @@ use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
  */
 class Request implements HttpServletRequest
 {
-
-    /**
-     * Array that contain's the cookies passed with.
-     * the request.
-     *
-     * @var array
-     */
-    protected $cookies = array();
 
     /**
      * The ID of requested session.
@@ -457,13 +449,13 @@ class Request implements HttpServletRequest
     /**
      * Adds the passed cookie to this request.
      *
-     * @param \TechDivision\Servlet\Http\Cookie $cookie The cookie to add
+     * @param \TechDivision\Http\HttpCookieInterface $cookie The cookie to add
      *
      * @return void
      */
-    public function addCookie(Cookie $cookie)
+    public function addCookie(HttpCookieInterface $cookie)
     {
-        $this->cookies[$cookie->getName()] = $cookie;
+        $this->getHttpRequest()->addCookie($cookie);
     }
 
     /**
@@ -476,7 +468,7 @@ class Request implements HttpServletRequest
      */
     public function hasCookie($cookieName)
     {
-        return array_key_exists($cookieName, $this->cookies);
+        return $this->getHttpRequest()->hasCookie($cookieName);
     }
 
     /**
@@ -484,13 +476,11 @@ class Request implements HttpServletRequest
      *
      * @param string $cookieName The name of the cookie to return
      *
-     * @return mixed The cookie value
+     * @return \TechDivision\Http\HttpCookieInterface The cookie instance
      */
     public function getCookie($cookieName)
     {
-        if ($this->hasCookie($cookieName)) {
-            return $this->cookies[$cookieName];
-        }
+        return $this->getHttpRequest()->getCookie($cookieName);
     }
 
     /**

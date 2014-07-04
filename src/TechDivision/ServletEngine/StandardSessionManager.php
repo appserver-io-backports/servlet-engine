@@ -21,7 +21,6 @@
 namespace TechDivision\ServletEngine;
 
 use TechDivision\Servlet\ServletSession;
-use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\ServletEngine\Http\Session;

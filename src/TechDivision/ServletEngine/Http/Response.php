@@ -240,18 +240,6 @@ class Response extends GenericStackable implements HttpServletResponse
     }
 
     /**
-     * Resets the stream resource pointing to body content.
-     *
-     * @param resource $bodyStream The body content stream resource
-     *
-     * @return void
-     */
-    public function setBodyStream($bodyStream)
-    {
-        $this->getHttpResponse()->setBodyStream($bodyStream);
-    }
-
-    /**
      * Sets the headers.
      *
      * @param array $headers The headers array

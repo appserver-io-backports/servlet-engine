@@ -72,7 +72,6 @@ class ServletValve
 
         // wait until the response has been dispatched
         while ($servletResponse->hasState(HttpResponseStates::DISPATCH) === false) {
-            usleep(10000);
         }
     }
 }

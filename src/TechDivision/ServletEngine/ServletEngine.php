@@ -365,9 +365,6 @@ class ServletEngine extends GenericStackable implements ModuleInterface
                     break;
                 }
             }
-
-            // we try to avoid burning the the CPU
-            usleep(10000);
         }
 
         // inject the found request handler into the servlet request

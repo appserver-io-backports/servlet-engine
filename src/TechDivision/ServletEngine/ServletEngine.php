@@ -299,6 +299,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             $servletRequest = new Request();
             $servletRequest->injectHttpRequest($request);
             $servletRequest->injectServerVars($requestContext->getServerVars());
+            $servletRequest->setBodyStream($request->getBodyContent());
 
             // prepare the servlet request
             $this->prepareServletRequest($servletRequest);

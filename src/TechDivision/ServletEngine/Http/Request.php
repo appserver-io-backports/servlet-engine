@@ -48,6 +48,13 @@ class Request implements HttpServletRequest
 {
 
     /**
+     * The body stream, a string because we can't serialize memory stream here.
+     *
+     * @var string
+     */
+    protected $bodyStream;
+
+    /**
      * The ID of requested session.
      *
      * @var string
@@ -230,21 +237,21 @@ class Request implements HttpServletRequest
      */
     public function getBodyContent()
     {
-        return $this->getHttpRequest()->getBodyContent();
+        return $this->getBodyStream();
     }
 
     /**
-     * Return request content
+     * Returns the body stream as a resource.
      *
-     * @return resource The request content
+     * @return resource The body stream
      */
     public function getBodyStream()
     {
-        return $this->getHttpRequest()->getBodyStream();
+        return $this->bodyStream;
     }
 
     /**
-     * Resets the stream resource pointing to body content.
+     * Resetss the stream resource pointing to body content.
      *
      * @param resource $bodyStream The body content stream resource
      *
@@ -252,7 +259,7 @@ class Request implements HttpServletRequest
      */
     public function setBodyStream($bodyStream)
     {
-        $this->getHttpRequest()->setBodyStream($bodyStream);
+        $this->bodyStream = $bodyStream;
     }
 
     /**

@@ -72,8 +72,6 @@ class DefaultSessionSettings extends GenericStackable implements SessionSettings
 
     /**
      * Initialize the default session settings.
-     *
-     * @return void
      */
     public function __construct()
     {

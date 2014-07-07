@@ -22,11 +22,11 @@
 
 namespace TechDivision\ServletEngine\Http;
 
-use TechDivision\Http\HttpResponseInterface;
+use TechDivision\Storage\GenericStackable;
 use TechDivision\Http\HttpProtocol;
 use TechDivision\Http\HttpCookieInterface;
+use TechDivision\Http\HttpResponseInterface;
 use TechDivision\Servlet\Http\HttpServletResponse;
-use TechDivision\Storage\GenericStackable;
 
 /**
  * A servlet request implementation.
@@ -144,9 +144,9 @@ class Response extends GenericStackable implements HttpServletResponse
     }
 
     /**
-     * Returns the cookies array.
+     * Returns the cookies.
      *
-     * @return array
+     * @return \ArrayAccess The cookies
      */
     public function getCookies()
     {

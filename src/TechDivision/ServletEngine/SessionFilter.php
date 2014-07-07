@@ -48,8 +48,6 @@ class SessionFilter extends \FilterIterator
      *
      * @param \Iterator $iterator   The iterator with the files we want to compare to
      * @param integer   $maximumAge The maximum age of the session files we want to load
-     *
-     * @return void
      */
     public function __construct(\Iterator $iterator, $maximumAge)
     {

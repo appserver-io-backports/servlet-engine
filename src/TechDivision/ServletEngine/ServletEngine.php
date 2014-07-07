@@ -15,12 +15,12 @@
 
 namespace TechDivision\ServletEngine;
 
+use TechDivision\Http\HttpCookie;
 use TechDivision\Http\HttpProtocol;
 use TechDivision\Http\HttpRequestInterface;
 use TechDivision\Http\HttpResponseInterface;
 use TechDivision\Http\HttpResponseStates;
 use TechDivision\Storage\GenericStackable;
-use TechDivision\Servlet\Http\Cookie;
 use TechDivision\Servlet\ServletRequest;
 use TechDivision\Servlet\ServletResponse;
 use TechDivision\Servlet\Http\HttpServletRequest;
@@ -299,7 +299,11 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             $servletRequest = new Request();
             $servletRequest->injectHttpRequest($request);
             $servletRequest->injectServerVars($requestContext->getServerVars());
-            $servletRequest->setBodyStream($request->getBodyContent());
+
+            // set the body content if we can find one
+            if ($request->getHeader(HttpProtocol::HEADER_CONTENT_LENGTH) > 0) {
+                $servletRequest->setBodyStream($request->getBodyContent());
+            }
 
             // prepare the servlet request
             $this->prepareServletRequest($servletRequest);
@@ -404,7 +408,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
 
             // create real cookie for each cookie key/value pair
             foreach ($cookieHeaders as $cookieHeader) {
-                $servletRequest->addCookie(Cookie::createFromRawSetCookieHeader($cookieHeader));
+                $servletRequest->addCookie(HttpCookie::createFromRawSetCookieHeader($cookieHeader));
             }
         }
 

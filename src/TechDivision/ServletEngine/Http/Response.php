@@ -115,7 +115,7 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function addCookie(HttpCookieInterface $cookie)
     {
-        $this->getHttpResponse()->addCookie($cookie);
+        $this->cookies[$cookie->getName()] = $cookie;
     }
 
     /**
@@ -128,7 +128,7 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function hasCookie($cookieName)
     {
-        return $this->getHttpResponse()->hasCookie($cookieName);
+        return isset($this->cookies[$cookieName]);
     }
 
     /**
@@ -140,7 +140,9 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function getCookie($cookieName)
     {
-        return $this->getHttpResponse()->getCookie($cookieName);
+        if ($this->hasCookie($cookieName)) {
+            return $this->cookies[$cookieName];
+        }
     }
 
     /**
@@ -150,7 +152,7 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function getCookies()
     {
-        return $this->getHttpResponse()->getCookies();
+        return $this->cookies;
     }
 
     /**

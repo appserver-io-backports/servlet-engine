@@ -332,7 +332,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
 
             // transform the servlet response cookies into Http headers
             foreach ($servletResponse->getCookies() as $cookie) {
-                $response->addHeader(HttpProtocol::HEADER_SET_COOKIE, $cookie->__toString());
+                $response->addCookie($cookie);
             }
 
             // set response state to be dispatched after this without calling other modules process

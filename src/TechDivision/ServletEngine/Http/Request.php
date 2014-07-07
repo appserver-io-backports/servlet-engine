@@ -126,11 +126,11 @@ class Request implements HttpServletRequest
     /**
      * Injects the server variables.
      *
-     * @param array $serverVars The server variables
+     * @param \ArrayAccess $serverVars The server variables
      *
      * @return void
      */
-    public function injectServerVars(array $serverVars)
+    public function injectServerVars($serverVars)
     {
         $this->serverVars = $serverVars;
     }

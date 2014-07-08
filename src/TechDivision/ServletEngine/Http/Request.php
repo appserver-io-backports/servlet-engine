@@ -118,6 +118,13 @@ class Request implements HttpServletRequest
     protected $requestHandler;
 
     /**
+     * The array with the file parts.
+     *
+     * @var array
+     */
+    protected $parts = array();
+
+    /**
      * Injects the context that allows access to session and
      * server information.
      *
@@ -311,7 +318,9 @@ class Request implements HttpServletRequest
      */
     public function getPart($name)
     {
-        return $this->getHttpRequest()->getPart($name);
+        if (array_key_exists($name, $this->parts)) {
+            return $this->parts[$name];
+        }
     }
 
     /**
@@ -321,7 +330,23 @@ class Request implements HttpServletRequest
      */
     public function getParts()
     {
-        return $this->getHttpRequest()->getParts();
+        return $this->parts;
+    }
+
+    /**
+     * Adds a part to the parts collection.
+     *
+     * @param \TechDivision\ServletEngine\Http\Part $part A form part object
+     * @param string                                $name A manually defined name
+     *
+     * @return void
+     */
+    public function addPart(Part $part, $name = null)
+    {
+        if ($name == null) {
+            $name = $part->getName();
+        }
+        $this->parts[$name] = $part;
     }
 
     /**

@@ -39,6 +39,7 @@ use TechDivision\ApplicationServer\Interfaces\ContextInterface;
 use TechDivision\ApplicationServer\Interfaces\ContainerInterface;
 use TechDivision\Connection\ConnectionRequestInterface;
 use TechDivision\Connection\ConnectionResponseInterface;
+use TechDivision\ServletEngine\Http\Part;
 
 /**
  * A servlet engine implementation.
@@ -300,6 +301,11 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             $servletRequest->injectHttpRequest($request);
             $servletRequest->injectServerVars($requestContext->getServerVars());
 
+            // initialize the parts
+            foreach ($request->getParts() as $name => $part) {
+                $servletRequest->addPart(Part::fromHttpRequest($part));
+            }
+
             // set the body content if we can find one
             if ($request->getHeader(HttpProtocol::HEADER_CONTENT_LENGTH) > 0) {
                 $servletRequest->setBodyStream($request->getBodyContent());
@@ -370,6 +376,9 @@ class ServletEngine extends GenericStackable implements ModuleInterface
                     break;
                 }
             }
+
+            // reduce CPU load a bit
+            usleep(100); // === 0.1 ms
         }
 
         // inject the found request handler into the servlet request

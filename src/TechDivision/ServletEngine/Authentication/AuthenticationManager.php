@@ -38,7 +38,7 @@ use TechDivision\Servlet\ServletResponse;
  */
 interface AuthenticationManager
 {
-    
+
     /**
      * Handles request in order to authenticate.
      *

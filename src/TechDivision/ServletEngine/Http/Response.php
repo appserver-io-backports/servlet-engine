@@ -24,6 +24,7 @@ namespace TechDivision\ServletEngine\Http;
 
 use TechDivision\Storage\GenericStackable;
 use TechDivision\Http\HttpProtocol;
+use TechDivision\Http\HttpResponseStates;
 use TechDivision\Http\HttpCookieInterface;
 use TechDivision\Http\HttpResponseInterface;
 use TechDivision\Servlet\Http\HttpServletResponse;
@@ -43,40 +44,38 @@ class Response extends GenericStackable implements HttpServletResponse
 {
 
     /**
-     * The Http response instance.
-     *
-     * @var \TechDivision\Http\HttpResponseInteface
-     */
-    protected $httpResponse;
-
-    /**
-     * The body stream, a string because we can't serialize memory stream here.
-     *
-     * @var string
-     */
-    protected $bodyStream;
-
-
-    /**
      * Initialize the servlet response.
      *
      * @return void
      */
     public function __construct()
     {
-        $this->cookies = new GenericStackable();
+        $this->init();
     }
 
     /**
-     * Injects the Http response instance.
-     *
-     * @param \TechDivision\Http\HttpResponseInterface $httpResponse The Http response instance
+     * Initialises the response object to default properties
      *
      * @return void
      */
-    public function injectHttpResponse(HttpResponseInterface $httpResponse)
+    public function init()
     {
-        $this->httpResponse = $httpResponse;
+
+        // init body stream
+        $this->bodyStream = '';
+
+        // init default response properties
+        $this->statusCode = 200;
+        $this->version = 'HTTP/1.1';
+        $this->statusReasonPhrase = "OK";
+        $this->mimeType = "text/plain";
+        $this->state = HttpResponseStates::INITIAL;
+
+        // init cookies and headers
+        $this->cookies = new GenericStackable();
+        $this->headers = new GenericStackable();
+
+        // reset to default headers
         $this->initDefaultHeaders();
     }
 
@@ -94,16 +93,6 @@ class Response extends GenericStackable implements HttpServletResponse
 
         // set per default text/html mimetype
         $this->addHeader(HttpProtocol::HEADER_CONTENT_TYPE, 'text/html');
-    }
-
-    /**
-     * Returns the Http response instance.
-     *
-     * @return \TechDivision\Http\HttpResponseInterface The Http response instance
-     */
-    public function getHttpResponse()
-    {
-        return $this->httpResponse;
     }
 
     /**
@@ -242,7 +231,7 @@ class Response extends GenericStackable implements HttpServletResponse
     }
 
     /**
-     * Sets the headers.
+     * Resets all headers by given array
      *
      * @param array $headers The headers array
      *
@@ -250,77 +239,103 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function setHeaders(array $headers)
     {
-        $this->getHttpResponse()->setHeaders($headers);
+        $this->headers = $headers;
     }
 
     /**
-     * Returns the headers array.
+     * Return's all headers as array
      *
      * @return array
      */
     public function getHeaders()
     {
-        return $this->getHttpResponse()->getHeaders();
+        return $this->headers;
     }
 
     /**
-     * Adds a header to the internal array.
+     * Adds a header information got from connection. We've to take care that headers
+     * like Set-Cookie header can exist multiple times. To support this create an
+     * array that keeps the multiple header values.
      *
-     * @param string     $name   The header label e.g. Accept or Content-Length
-     * @param string|int $value  The header value
-     * @param boolean    $append If TRUE and a header with the passed name already exists, the value will be appended
+     * @param string  $name   The header name
+     * @param string  $value  The headers value
+     * @param boolean $append If TRUE and a header with the passed name already exists, the value will be appended
      *
      * @return void
      */
     public function addHeader($name, $value, $append = false)
     {
-        $this->getHttpResponse()->addHeader($name, $value, $append);
+        // normalize header names in case of 'Content-type' into 'Content-Type'
+        $name = str_replace(' ', '-', ucwords(str_replace('-', ' ', $name)));
+
+        // check if we've a Set-Cookie header to process
+        if ($this->hasHeader($name) && $append === true) {
+
+            // then check if we've already one cookie header available
+            if (is_array($headerValue = $this->getHeader($name))) {
+                $headerValue[] = $value;
+            } else {
+                $headerValue = array($headerValue, $value);
+            }
+
+            // if no cookie header simple add it
+            $this->headers[$name] = $headerValue;
+
+        } else {
+            $this->headers[$name] = $value;
+        }
     }
 
     /**
-     * Returns header info by given name
+     * Returns header by given name.
      *
-     * @param string $name The headers name to return
+     * @param string $name The header name to get
      *
-     * @return string|null
+     * @return mixed Usually a string, but can also be an array if we request the Set-Cookie header
+     * @throws \TechDivision\Http\HttpException Is thrown if the requested header is not available
      */
     public function getHeader($name)
     {
-        return $this->getHttpResponse()->getHeader($name);
+        if (isset($this->headers[$name]) === false) {
+            throw new HttpException("Response header '$name' not found");
+        }
+        return $this->headers[$name];
     }
 
     /**
-     * Returns response http version
+     * Return's the http version of the response
      *
      * @return string
      */
     public function getVersion()
     {
-        return $this->getHttpResponse()->getVersion();
+        return $this->version;
     }
 
     /**
-     * Removes one single header from the headers array.
+     * Removes the header with the passed name.
      *
-     * @param string $name The header to remove
+     * @param string $name Name of the header to remove
      *
      * @return void
      */
     public function removeHeader($name)
     {
-        $this->getHttpResponse()->removeHeader($name);
+        if (isset($this->headers[$name])) {
+            unset($this->headers[$name]);
+        }
     }
 
     /**
-     * Checks if header exists by given name.
+     * Check's if header exists by given name
      *
      * @param string $name The header name to check
      *
-     * @return boolean TRUE if the header is available, else FALSE
+     * @return boolean
      */
     public function hasHeader($name)
     {
-        return $this->getHttpResponse()->hasHeader($name);
+        return array_key_exists($name, $this->headers);
     }
 
     /**
@@ -332,7 +347,11 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function setStatusCode($code)
     {
-        $this->getHttpResponse()->setStatusCode($code);
+        // set status code
+        $this->statusCode = $code;
+
+        // lookup reason phrase by code and set
+        $this->setStatusReasonPhrase(HttpProtocol::getStatusReasonPhraseByCode($code));
     }
 
     /**
@@ -342,11 +361,11 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function getStatusCode()
     {
-        return $this->getHttpResponse()->getStatusCode();
+        return $this->statusCode;
     }
 
     /**
-     * Sets the status reason phrase
+     * Set's the status reason phrase
      *
      * @param string $statusReasonPhrase The reason phrase
      *
@@ -354,17 +373,17 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function setStatusReasonPhrase($statusReasonPhrase)
     {
-        $this->getHttpResponse()->setStatusReasonPhrase($statusReasonPhrase);
+        $this->statusReasonPhrase = $statusReasonPhrase;
     }
 
     /**
-     * Returns the status phrase based on the status code
+     * Return's the status phrase based on the status code
      *
      * @return string
      */
     public function getStatusReasonPhrase()
     {
-        return $this->getHttpResponse()->getStatusReasonPhrase();
+        return $this->statusReasonPhrase;
     }
 
     /**

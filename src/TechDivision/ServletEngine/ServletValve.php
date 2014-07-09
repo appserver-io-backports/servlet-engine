@@ -21,8 +21,7 @@
 
 namespace TechDivision\ServletEngine;
 
-use \TechDivision\Http\HttpResponseStates;
-use \TechDivision\Servlet\ServletSession;
+use \TechDivision\ServletEngine\Valve;
 use \TechDivision\Servlet\Http\HttpServletRequest;
 use \TechDivision\Servlet\Http\HttpServletResponse;
 
@@ -37,7 +36,7 @@ use \TechDivision\Servlet\Http\HttpServletResponse;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class ServletValve
+class ServletValve implements Valve
 {
 
     /**
@@ -52,26 +51,13 @@ class ServletValve
     public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
     {
 
-        // load the application context
-        $context = $servletRequest->getRequestHandler();
+        // load the servlet context
+        $servletContext = $servletRequest->getContext()->getServletContext();
 
-        // notify the application to handle the request
-        $context->synchronized(function ($self, $request, $response) {
+        // locate and service the servlet
+        $servletContext->locate($servletRequest)->service($servletRequest, $servletResponse);
 
-            // set the servlet/response intances
-            $self->servletRequest = $request;
-            $self->servletResponse = $response;
-
-            // set the flag to start request processing
-            $self->handleRequest = true;
-
-            // notify the request handler
-            $self->notify();
-
-        }, $context, $servletRequest, $servletResponse);
-
-        // wait until the response has been dispatched
-        while ($servletResponse->hasState(HttpResponseStates::DISPATCH) === false) {
-        }
+        // dispatch this request, because we have finished processing it
+        $servletRequest->setDispatched(true);
     }
 }

@@ -23,6 +23,7 @@
 namespace TechDivision\ServletEngine\Http;
 
 use TechDivision\Context\Context;
+use TechDivision\Http\HttpCookieInterface;
 use TechDivision\Http\HttpRequestInterface;
 use TechDivision\Servlet\SessionUtils;
 use TechDivision\Servlet\Http\HttpSession;
@@ -31,7 +32,6 @@ use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Servlet\Http\HttpServletResponse;
 use TechDivision\Server\Dictionaries\ServerVars;
 use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
-use TechDivision\Http\HttpCookieInterface;
 
 /**
  * A Http servlet request implementation.
@@ -111,11 +111,11 @@ class Request implements HttpServletRequest
     protected $dispatched = false;
 
     /**
-     * The request handler that handles the request.
+     * The request context that handles the request.
      *
-     * @var \TechDivision\ServletEngine\Http\RequestContext
+     * @var \TechDivision\Context\Context
      */
-    protected $requestHandler;
+    protected $context;
 
     /**
      * The array with the file parts.
@@ -128,13 +128,13 @@ class Request implements HttpServletRequest
      * Injects the context that allows access to session and
      * server information.
      *
-     * @param \TechDivision\ServletEngine\Http\RequestContext $context The request context instance
+     * @param \TechDivision\Context\Context $context The request context instance
      *
      * @return void
      */
-    public function injectRequestHandler($requestHandler)
+    public function injectContext(Context $context)
     {
-        $this->requestHandler = $requestHandler;
+        $this->context = $context;
     }
 
     /**
@@ -175,11 +175,11 @@ class Request implements HttpServletRequest
      * Returns the context that allows access to session and
      * server information.
      *
-     * @return \TechDivision\ServletEngine\Http\RequestContext The request context
+     * @return \TechDivision\Context\Context The request context
      */
     public function getContext()
     {
-        return $this->getRequestHandler()->getApplication();
+        return $this->context;
     }
 
     /**

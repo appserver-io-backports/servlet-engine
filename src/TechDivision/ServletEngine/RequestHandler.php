@@ -21,7 +21,6 @@
 
 namespace TechDivision\ServletEngine;
 
-use TechDivision\Context\Context;
 use \TechDivision\Http\HttpResponseStates;
 use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
 
@@ -36,7 +35,7 @@ use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class RequestHandler extends \Thread implements Context
+class RequestHandler extends \Thread
 {
 
     /**
@@ -45,6 +44,13 @@ class RequestHandler extends \Thread implements Context
      * @return \TechDivision\ApplicationServer\Interfaces\ApplicationInterface
      */
     protected $application;
+
+    /**
+     * The valves we're processing each request with.
+     *
+     * @return \TechDivision\Storage\GenericStackable
+     */
+    protected $valves;
 
     /**
      * The actual request instance we have to process.
@@ -68,15 +74,19 @@ class RequestHandler extends \Thread implements Context
     protected $handleRequest;
 
     /**
-     * Initializes the request handler with the application.
+     * Initializes the request handler with the application and the
+     * valves to be processed
      *
-     * @return \TechDivision\ApplicationServer\Interfaces\ApplicationInterface The application instance
+     * @param \TechDivision\ApplicationServer\Interfaces\ApplicationInterface $application The application instance
+     * @param \TechDivision\Storage\GenericStackable                          $valves      The valves to process
      */
-    public function __construct(ApplicationInterface $application)
+    public function __construct(ApplicationInterface $application, $valves)
     {
 
         // initialize the request handlers application
         $this->application = $application;
+        $this->valves = $valves;
+
         $this->handleRequest = false;
 
         // start the request processing
@@ -84,25 +94,13 @@ class RequestHandler extends \Thread implements Context
     }
 
     /**
-     * Returns the value with the passed name from the context.
+     * Returns the valves we're processing each request with.
      *
-     * @param string $key The key of the value to return from the context.
-     *
-     * @return mixed The requested attribute
+     * @return \TechDivision\Storage\GenericStackable The valves
      */
-    public function getAttribute($key)
+    protected function getValves()
     {
-        // do nothing here, it's only to implement the Context interface
-    }
-
-    /**
-     * Returns the application instance.
-     *
-     * @return \TechDivision\ApplicationServer\Interfaces\ApplicationInterface The application instance
-     */
-    protected function getApplication()
-    {
-        return $this->application;
+        return $this->valves;
     }
 
     /**
@@ -127,7 +125,7 @@ class RequestHandler extends \Thread implements Context
                     try {
 
                         // reset request/response instance
-                        $application = $this->application;
+                        $application = $self->application;
 
                         // register the class loader again, because each thread has its own context
                         $application->registerClassLoaders();
@@ -136,10 +134,24 @@ class RequestHandler extends \Thread implements Context
                         $servletRequest = $self->servletRequest;
                         $servletResponse = $self->servletResponse;
 
-                        // locate and service the servlet
-                        $application->getServletContext()
-                            ->locate($servletRequest)
-                            ->service($servletRequest, $servletResponse);
+                        // prepare and set the applications context path
+                        $servletRequest->setContextPath($contextPath = '/' . $application->getName());
+
+                        // prepare the path information depending if we're in a vhost or not
+                        if ($application->isVhostOf($host) === false) {
+                            $servletRequest->setServletPath(str_replace($contextPath, '', $servletRequest->getServletPath()));
+                        }
+
+                        // inject the found application into the servlet request
+                        $servletRequest->injectContext($application);
+
+                        // process the valves
+                        foreach ($this->getValves() as $valve) {
+                            $valve->invoke($servletRequest, $servletResponse);
+                            if ($servletRequest->isDispatched() === true) {
+                                break;
+                            }
+                        }
 
                     } catch (\Exception $e) {
                         $servletResponse->appendBodyStream($e->__toString());

@@ -117,13 +117,13 @@ class ServletManager extends \Stackable implements ServletContext
             $config = new \SimpleXMLElement(file_get_contents($web));
 
             // intialize the security configuration by parseing the security nodes
-            foreach ($config->xpath('/web-app/security') as $securityParam) {
+            foreach ($config->xpath('/web-app/security') as $key => $securityParam) {
                 // prepare the URL config in JSON format
                 $securedUrlConfig = json_decode(json_encode($securityParam), 1);
                 // add the web app path to the security config (to resolve relative filenames)
                 $securedUrlConfig['webapp-path'] = $folder;
                 // add the configuration to the array
-                $this->securedUrlConfigs->set($folder, $securedUrlConfig);
+                $this->securedUrlConfigs->set($key, $securedUrlConfig);
             }
 
             // initialize the context by parsing the context-param nodes

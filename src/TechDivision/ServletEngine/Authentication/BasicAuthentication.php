@@ -47,13 +47,13 @@ class BasicAuthentication extends AbstractAuthentication
         $config = $this->getSecuredUrlConfig();
         $req = $this->getServletRequest();
         $res = $this->getServletResponse();
-        
+
         $realm = $config['auth']['realm'];
         $adapterType = $config['auth']['adapter_type'];
 
         // if client provided authentication data
         if ($authorizationData = $req->getHeader(HttpProtocol::HEADER_AUTHORIZATION)) {
-            
+
             list ($authType, $data) = explode(' ', $authorizationData);
 
             // handle authentication method and get credentials
@@ -64,13 +64,13 @@ class BasicAuthentication extends AbstractAuthentication
 
             // if credentials are provided and authorization method is the same as configured
             if ($credentials) {
-                
+
                 // get real credentials
                 list ($user, $pwd) = explode(':', $credentials);
 
                 // initialize the adapter class
                 $authAdapterClass = 'TechDivision\ServletEngine\Authentication\Adapters\\' . ucfirst($adapterType) . 'Adapter';
-                
+
                 // instantiate configured authentication adapter
                 $authAdapter = new $authAdapterClass($config);
 
@@ -80,7 +80,7 @@ class BasicAuthentication extends AbstractAuthentication
                 }
             }
         }
-        
+
         // either authentication data was not provided or authentication failed
         $res->setStatusCode(401);
         $res->addHeader(HttpProtocol::HEADER_WWW_AUTHENTICATE, AbstractAuthentication::AUTHENTICATION_METHOD_BASIC . ' ' . 'realm="' . $realm . '"');

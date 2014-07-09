@@ -34,13 +34,13 @@ use TechDivision\Server\Exceptions\ModuleException;
 use TechDivision\ServletEngine\Http\Session;
 use TechDivision\ServletEngine\Http\Request;
 use TechDivision\ServletEngine\Http\Response;
-use TechDivision\ServletEngine\Http\HttpRequestContext;
 use TechDivision\ServletEngine\Authentication\AuthenticationValve;
 use TechDivision\ApplicationServer\Interfaces\ContextInterface;
 use TechDivision\ApplicationServer\Interfaces\ContainerInterface;
 use TechDivision\Connection\ConnectionRequestInterface;
 use TechDivision\Connection\ConnectionResponseInterface;
 use TechDivision\ServletEngine\Http\Part;
+use TechDivision\ServletEngine\BadRequestException;
 
 /**
  * A servlet engine implementation.
@@ -118,6 +118,13 @@ class ServletEngine extends GenericStackable implements ModuleInterface
          * @var \TechDivision\Storage\GenericStackable
          */
         $this->workingRequestHandlers = new GenericStackable();
+
+        /**
+         * Storage with URL => application mappings.
+         *
+         * @var \TechDivision\Storage\GenericStackable
+         */
+        $this->urlMappings = new GenericStackable();
     }
 
     /**
@@ -161,6 +168,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             $this->initVirtualHosts();
             $this->initApplications();
             $this->initRequestHandlers();
+            $this->initUrlMappings();
 
         } catch (\Exception $e) {
             throw new ModuleException($e);
@@ -218,25 +226,43 @@ class ServletEngine extends GenericStackable implements ModuleInterface
      */
     public function initApplications()
     {
+
         // iterate over a applications vhost/alias configuration
-        foreach ($this->getServerContext()->getContainer()->getApplications() as $application) {
+        foreach ($this->getServerContext()->getContainer()->getApplications() as $applicationName => $application) {
 
             // iterate over the virtual hosts
             foreach ($this->virtualHosts as $virtualHost) {
-
-                // check if the virtual host match the application
                 if ($virtualHost->match($application)) {
-
-                    // bind the virtual host to the application
                     $application->addVirtualHost($virtualHost);
-
-                    // add the application to the internal array
-                    $this->applications['/^' . $virtualHost->getName() . '\/(([a-z0-9+\$_-]\.?)+)*\/?/'] = $application;
                 }
             }
 
             // finally APPEND a wildcard pattern for each application to the patterns array
-            $this->applications['/^[a-z0-9-.]*\/' . $application->getName() . '\/(([a-z0-9+\$_-]\.?)+)*\/?/'] = $application;
+            $this->applications[$applicationName] = $application;
+        }
+    }
+
+    /**
+     * Initialize the URL mappings.
+     *
+     * @return void
+     */
+    public function initUrlMappings()
+    {
+
+        // iterate over a applications vhost/alias configuration
+        foreach ($this->getApplications() as $application) {
+
+            // initialize the application name
+            $applicationName = $application->getName();
+
+            // iterate over the virtual hosts and add a mapping for each
+            foreach ($application->getVhosts() as $virtualHost) {
+                $this->urlMappings['/^' . $virtualHost->getName() . '\/(([a-z0-9+\$_-]\.?)+)*\/?/'] = $applicationName;
+            }
+
+            // finally APPEND a wildcard pattern for each application to the patterns array
+            $this->urlMappings['/^[a-z0-9-.]*\/' . $applicationName . '\/(([a-z0-9+\$_-]\.?)+)*\/?/'] = $applicationName;
         }
     }
 
@@ -247,11 +273,16 @@ class ServletEngine extends GenericStackable implements ModuleInterface
      */
     public function initRequestHandlers()
     {
+
+        // create a local copy of the valves
+        $valves = $this->valves;
+
         // we want to prepare an request for each application and each worker
-        foreach ($this->getApplications() as $pattern => $application) {
-            $this->requestHandlers['/' . $application->getName()] = new GenericStackable();
+        foreach ($this->getApplications() as $applicationName => $application) {
+            $this->requestHandlers[$applicationName] = new GenericStackable();
             for ($i = 0; $i < 4; $i++) {
-                $this->requestHandlers['/' . $application->getName()][$i] = new RequestHandler($application);
+                $requestHandler = new RequestHandler($application, $valves);
+                $this->requestHandlers[$applicationName][$requestHandler->getThreadId()] = $requestHandler;
             }
         }
     }
@@ -277,7 +308,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
      * @return bool
      * @throws \TechDivision\Server\Exceptions\ModuleException
      */
-    public function process( ConnectionRequestInterface $request, ConnectionResponseInterface $response,  RequestContextInterface $requestContext, $hook)
+    public function process(ConnectionRequestInterface $request, ConnectionResponseInterface $response,  RequestContextInterface $requestContext, $hook)
     {
 
         try {
@@ -317,27 +348,52 @@ class ServletEngine extends GenericStackable implements ModuleInterface
 
             // initialize the servlet response with the Http response values
             $servletResponse = new Response();
-            $servletResponse->injectHttpResponse($response);
             $servletRequest->injectResponse($servletResponse);
 
             // load a NOT working request handler from the pool
-            $this->requestHandlerFromPool($servletRequest);
+            $requestHandler = $this->requestHandlerFromPool($servletRequest);
 
-            // process the valves
-            foreach ($this->getValves() as $valve) {
-                $valve->invoke($servletRequest, $servletResponse);
-                if ($servletRequest->isDispatched() === true) {
-                    break;
-                }
+            // notify the application to handle the request
+            $requestHandler->synchronized(function ($self, $request, $response) {
+
+                // set the servlet/response intances
+                $self->servletRequest = $request;
+                $self->servletResponse = $response;
+
+                // set the flag to start request processing
+                $self->handleRequest = true;
+
+                // notify the request handler
+                $self->notify();
+
+            }, $requestHandler, $servletRequest, $servletResponse);
+
+            // wait until the response has been dispatched
+            while ($servletResponse->hasState(HttpResponseStates::DISPATCH) === false) {
             }
 
             // re-attach the request handler to the pool
-            $this->requestHandlerToPool($servletRequest);
+            $this->requestHandlerToPool($requestHandler);
+
+            // copy the values from the servlet response back to the HTTP response
+            $response->setStatusCode($servletResponse->getStatusCode());
+            $response->setStatusReasonPhrase($servletResponse->getStatusReasonPhrase());
+            $response->setVersion($servletResponse->getVersion());
+            $response->setState($servletResponse->getState());
 
             // append the content to the body stream
             $response->appendBodyStream($servletResponse->getBodyStream());
 
-            // transform the servlet response cookies into Http headers
+            // transform the servlet headers back into HTTP headers
+            $headers = array();
+            foreach ($servletResponse->getHeaders() as $name => $header) {
+                $headers[$name] = $header;
+            }
+
+            // set the headers as array (because we don't know if we have to use the append flag)
+            $response->setHeaders($headers);
+
+            // copy the servlet response cookies back to the HTTP response
             foreach ($servletResponse->getCookies() as $cookie) {
                 $response->addCookie($cookie);
             }
@@ -355,48 +411,65 @@ class ServletEngine extends GenericStackable implements ModuleInterface
     /**
      * Tries to find a request handler that matches the actual request and injects it into the request.
      *
-     * @param \TechDivision\Servlet\Http\HttpServletRequest $servletRequest The request instance to we have to inject a request handler
+     * @param string $contextPath The context path we need a request handler to handle for
      *
-     * @return void
+     * @return \TechDivision\ServletEngine\RequestHandler The request handler
      */
     protected function requestHandlerFromPool(HttpServletRequest $servletRequest)
     {
 
-        // we search for a request handler as long $handlerFound is empty
-        while ($handlerFound == null) {
+        // explode host and port from the host header
+        list ($host, $port) = explode(':', $servletRequest->getHeader(HttpProtocol::HEADER_HOST));
 
-            // iterate over all request handlers for the request we has to handle
-            foreach ($this->requestHandlers[$servletRequest->getContextPath()] as $i => $requestHandler) {
+        // prepare the request URL we want to match
+        $url =  $host . $servletRequest->getUri();
 
-                // if we've found a NOT working request handler, we stop
-                if (!isset($this->workingRequestHandlers[$threadId = $requestHandler->getThreadId()])) {
+        // iterate over all request handlers for the request we has to handle
+        foreach ($this->urlMappings as $pattern => $applicationName) {
 
-                    // mark the request handler working and initialize the found one
-                    $this->workingRequestHandlers[$threadId] = true;
-                    $handlerFound = $requestHandler;
-                    break;
+            // try to match a registered application with the passed request
+            if (preg_match($pattern, $url) === 1) {
+
+                // load the applications request handlers
+                $requestHandlers = $this->requestHandlers[$applicationName];
+
+                // we search for a request handler as long $handlerFound is empty
+                while (true) {
+
+                    // search a NOT working request handler
+                    foreach ($requestHandlers as $requestHandler) {
+
+                        // if we've found a NOT working request handler, we stop
+                        if (!isset($this->workingRequestHandlers[$threadId = $requestHandler->getThreadId()])) {
+
+                            // mark the request handler working and initialize the found one
+                            $this->workingRequestHandlers[$threadId] = true;
+
+                            return $requestHandler;
+                        }
+                    }
+
+                    // reduce CPU load a bit
+                    usleep(100); // === 0.1 ms
                 }
             }
-
-            // reduce CPU load a bit
-            usleep(100); // === 0.1 ms
         }
 
-        // inject the found request handler into the servlet request
-        $servletRequest->injectRequestHandler($handlerFound);
+        // if not throw a bad request exception
+        throw new BadRequestException(sprintf('Can\'t find application for URI %s', $uri));
     }
 
     /**
      * After a request has been processed by the injected request handler we remove
      * the thread ID of the request handler from the array with the working handlers.
      *
-     * @param \TechDivision\Servlet\Http\HttpServletRequest $servletRequest The request instance we want the request handler to freed
+     * @param \TechDivision\ServletEngine\RequestHandler $requestHandler The request handler instance we want to re-attach to the pool
      *
      * @return void
      */
-    protected function requestHandlerToPool(HttpServletRequest $servletRequest)
+    protected function requestHandlerToPool($requestHandler)
     {
-        unset($this->workingRequestHandlers[$servletRequest->getRequestHandler()->getThreadId()]);
+        unset($this->workingRequestHandlers[$requestHandler->getThreadId()]);
     }
 
     /**
@@ -467,34 +540,6 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             list ($dirname, $basename, $extension) = array_values(pathinfo($dirname));
 
         } while ($dirname !== false); // stop until we reached the root of the URI
-
-        // explode host and port from the host header
-        list ($host, $port) = explode(':', $servletRequest->getHeader(HttpProtocol::HEADER_HOST));
-
-        // prepare the URI to be matched
-        $url =  $host . $uri;
-
-        // try to find the application by match it one of the prepared patterns
-        foreach ($this->getApplications() as $pattern => $application) {
-
-            // try to match a registered application with the passed request
-            if (preg_match($pattern, $url) === 1) {
-
-                // prepare and set the applications context path
-                $servletRequest->setContextPath($contextPath = '/' . $application->getName());
-
-                // prepare the path information depending if we're in a vhost or not
-                if ($application->isVhostOf($host) === false) {
-                    $servletRequest->setServletPath(str_replace($contextPath, '', $servletRequest->getServletPath()));
-                }
-
-                // return, because request has been prepared successfully
-                return;
-            }
-        }
-
-        // if not throw a bad request exception
-        throw new BadRequestException(sprintf('Can\'t find application for URI %s', $uri));
     }
 
     /**

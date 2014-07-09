@@ -22,6 +22,7 @@
 
 namespace TechDivision\ServletEngine\Authentication;
 
+use TechDivision\Storage\GenericStackable;
 use TechDivision\Servlet\ServletRequest;
 use TechDivision\Servlet\ServletResponse;
 
@@ -56,9 +57,9 @@ class StandardAuthenticationManager implements AuthenticationManager
         // iterate over all servlets and return the matching one
         foreach ($context->getServletContext()->getSecuredUrlConfigs() as $webappPath => $securedUrlConfig) {
 
-           if ($securedUrlConfig == null) {
-               continue;
-           }
+            if ($securedUrlConfig == null) {
+                continue;
+            }
 
             // extract URL pattern and authentication configuration
             list ($urlPattern, $auth) = array_values($securedUrlConfig);

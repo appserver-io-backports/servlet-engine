@@ -67,14 +67,14 @@ abstract class AbstractAuthentication
      * @var \TechDivision\Servlet\ServletResponse
      */
     protected $servletResponse;
-    
+
     /**
      * The configuration with the secured URLs.
      *
      * @var array
      */
     protected $securedUrlConfig = array();
-    
+
     /**
      * The configuration with the secured URLs.
      *
@@ -142,7 +142,7 @@ abstract class AbstractAuthentication
     {
         return $this->servletResponse;
     }
-    
+
     /**
      * The configuration with the secured URLs.
      *

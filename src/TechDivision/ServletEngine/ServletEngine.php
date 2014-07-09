@@ -30,6 +30,7 @@ use TechDivision\Server\Dictionaries\ServerVars;
 use TechDivision\Server\Interfaces\ModuleInterface;
 use TechDivision\Server\Interfaces\RequestContextInterface;
 use TechDivision\Server\Interfaces\ServerContextInterface;
+use TechDivision\Server\Exceptions\ModuleException;
 use TechDivision\ServletEngine\Http\Session;
 use TechDivision\ServletEngine\Http\Request;
 use TechDivision\ServletEngine\Http\Response;

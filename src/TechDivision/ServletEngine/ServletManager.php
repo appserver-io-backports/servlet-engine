@@ -94,7 +94,6 @@ class ServletManager extends \Stackable implements ServletContext
     public function initialize()
     {
         $this->registerServlets();
-        return $this;
     }
 
     /**
@@ -398,5 +397,28 @@ class ServletManager extends \Stackable implements ServletContext
     public function locate(HttpServletRequest $servletRequest)
     {
         return $this->getResourceLocator()->locate($this, $servletRequest);
+    }
+
+    /**
+     * Initializes the manager instance.
+     *
+     * @return void
+     * @see \TechDivision\Application\Interfaces\ManagerInterface::initialize()
+     */
+    public function getIdentifier()
+    {
+        return ServletContext::IDENTIFIER;
+    }
+
+    /**
+     * Returns the value with the passed name from the context.
+     *
+     * @param string $key The key of the value to return from the context.
+     *
+     * @return mixed The requested attribute
+     */
+    public function getAttribute($key)
+    {
+        throw new \Exception(sprintf('%s is not implemented yes', __METHOD__));
     }
 }

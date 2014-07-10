@@ -30,6 +30,7 @@ use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Servlet\Http\HttpSessionWrapper;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Servlet\Http\HttpServletResponse;
+use TechDivision\ServletEngine\SessionManager;
 use TechDivision\Server\Dictionaries\ServerVars;
 use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
 
@@ -404,7 +405,7 @@ class Request implements HttpServletRequest
     {
 
         // if no session has already been load, initialize the session manager
-        $manager = $this->getContext()->getSessionManager();
+        $manager = $this->getContext()->getManager(SessionManager::IDENTIFIER);
 
         // if no session manager was found, we don't support sessions
         if ($manager == null) {

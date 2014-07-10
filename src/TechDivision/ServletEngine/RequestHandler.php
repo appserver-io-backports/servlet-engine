@@ -22,7 +22,7 @@
 namespace TechDivision\ServletEngine;
 
 use \TechDivision\Http\HttpResponseStates;
-use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
+use TechDivision\Application\Interfaces\ApplicationInterface;
 
 /**
  * This is a request handler that is necessary to process each request of an

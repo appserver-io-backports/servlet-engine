@@ -21,9 +21,10 @@
 
 namespace TechDivision\ServletEngine;
 
-use \TechDivision\ServletEngine\Valve;
-use \TechDivision\Servlet\Http\HttpServletRequest;
-use \TechDivision\Servlet\Http\HttpServletResponse;
+use TechDivision\Servlet\ServletContext;
+use TechDivision\Servlet\Http\HttpServletRequest;
+use TechDivision\Servlet\Http\HttpServletResponse;
+use TechDivision\ServletEngine\Valve;
 
 /**
  * Valve implementation that will be executed by the servlet engine to handle
@@ -51,11 +52,11 @@ class ServletValve implements Valve
     public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
     {
 
-        // load the servlet context
-        $servletContext = $servletRequest->getContext()->getServletContext();
+        // load the servlet manager
+        $servletManager = $servletRequest->getContext()->getManager(ServletContext::IDENTIFIER);
 
         // locate and service the servlet
-        $servletContext->locate($servletRequest)->service($servletRequest, $servletResponse);
+        $servletManager->locate($servletRequest)->service($servletRequest, $servletResponse);
 
         // dispatch this request, because we have finished processing it
         $servletRequest->setDispatched(true);

@@ -23,6 +23,7 @@
 namespace TechDivision\ServletEngine\Authentication;
 
 use TechDivision\Storage\GenericStackable;
+use TechDivision\Servlet\ServletContext;
 use TechDivision\Servlet\ServletRequest;
 use TechDivision\Servlet\ServletResponse;
 
@@ -55,7 +56,7 @@ class StandardAuthenticationManager implements AuthenticationManager
         $context = $servletRequest->getContext();
 
         // iterate over all servlets and return the matching one
-        foreach ($context->getServletContext()->getSecuredUrlConfigs() as $webappPath => $securedUrlConfig) {
+        foreach ($context->getManager(ServletContext::IDENTIFIER)->getSecuredUrlConfigs() as $webappPath => $securedUrlConfig) {
 
             if ($securedUrlConfig == null) {
                 continue;
@@ -90,5 +91,38 @@ class StandardAuthenticationManager implements AuthenticationManager
                 return $auth->authenticate();
             }
         }
+    }
+
+    /**
+     * Initializes the manager instance.
+     *
+     * @return void
+     * @see \TechDivision\Application\Interfaces\ManagerInterface::initialize()
+     */
+    public function getIdentifier()
+    {
+        return AuthenticationManager::IDENTIFIER;
+    }
+
+    /**
+     * Initializes the manager instance.
+     *
+     * @return void
+     * @see \TechDivision\Application\Interfaces\ManagerInterface::initialize()
+     */
+    public function initialize()
+    {
+    }
+
+    /**
+     * Returns the value with the passed name from the context.
+     *
+     * @param string $key The key of the value to return from the context.
+     *
+     * @return mixed The requested attribute
+     */
+    public function getAttribute($key)
+    {
+        throw new \Exception(sprintf('%s is not implemented yes', __METHOD__));
     }
 }

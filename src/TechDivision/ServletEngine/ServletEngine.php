@@ -21,6 +21,8 @@ use TechDivision\Http\HttpRequestInterface;
 use TechDivision\Http\HttpResponseInterface;
 use TechDivision\Http\HttpResponseStates;
 use TechDivision\Storage\GenericStackable;
+use TechDivision\Application\VirtualHost;
+use TechDivision\Application\Interfaces\ContextInterface;
 use TechDivision\Servlet\ServletRequest;
 use TechDivision\Servlet\ServletResponse;
 use TechDivision\Servlet\Http\HttpServletRequest;
@@ -34,13 +36,12 @@ use TechDivision\Server\Exceptions\ModuleException;
 use TechDivision\ServletEngine\Http\Session;
 use TechDivision\ServletEngine\Http\Request;
 use TechDivision\ServletEngine\Http\Response;
+use TechDivision\ServletEngine\Http\Part;
+use TechDivision\ServletEngine\BadRequestException;
 use TechDivision\ServletEngine\Authentication\AuthenticationValve;
-use TechDivision\ApplicationServer\Interfaces\ContextInterface;
 use TechDivision\ApplicationServer\Interfaces\ContainerInterface;
 use TechDivision\Connection\ConnectionRequestInterface;
 use TechDivision\Connection\ConnectionResponseInterface;
-use TechDivision\ServletEngine\Http\Part;
-use TechDivision\ServletEngine\BadRequestException;
 
 /**
  * A servlet engine implementation.
@@ -257,7 +258,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             $applicationName = $application->getName();
 
             // iterate over the virtual hosts and add a mapping for each
-            foreach ($application->getVhosts() as $virtualHost) {
+            foreach ($application->getVirtualHosts() as $virtualHost) {
                 $this->urlMappings['/^' . $virtualHost->getName() . '\/(([a-z0-9+\$_-]\.?)+)*\/?/'] = $applicationName;
             }
 

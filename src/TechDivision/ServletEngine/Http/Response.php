@@ -22,10 +22,12 @@
 
 namespace TechDivision\ServletEngine\Http;
 
-use TechDivision\Http\HttpResponseInterface;
+use TechDivision\Storage\GenericStackable;
 use TechDivision\Http\HttpProtocol;
-use TechDivision\Servlet\Http\HttpServletResponse;
+use TechDivision\Http\HttpResponseStates;
 use TechDivision\Http\HttpCookieInterface;
+use TechDivision\Http\HttpResponseInterface;
+use TechDivision\Servlet\Http\HttpServletResponse;
 
 /**
  * A servlet request implementation.
@@ -38,26 +40,42 @@ use TechDivision\Http\HttpCookieInterface;
  * @license    http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link       http://www.appserver.io
  */
-class Response implements HttpServletResponse
+class Response extends GenericStackable implements HttpServletResponse
 {
 
     /**
-     * The Http response instance.
-     *
-     * @var \TechDivision\Http\HttpResponseInteface
-     */
-    protected $httpResponse;
-
-    /**
-     * Injects the Http response instance.
-     *
-     * @param \TechDivision\Http\HttpResponseInterface $httpResponse The Http response instance
+     * Initialize the servlet response.
      *
      * @return void
      */
-    public function injectHttpResponse(HttpResponseInterface $httpResponse)
+    public function __construct()
     {
-        $this->httpResponse = $httpResponse;
+        $this->init();
+    }
+
+    /**
+     * Initialises the response object to default properties
+     *
+     * @return void
+     */
+    public function init()
+    {
+
+        // init body stream
+        $this->bodyStream = '';
+
+        // init default response properties
+        $this->statusCode = 200;
+        $this->version = 'HTTP/1.1';
+        $this->statusReasonPhrase = "OK";
+        $this->mimeType = "text/plain";
+        $this->state = HttpResponseStates::INITIAL;
+
+        // init cookies and headers
+        $this->cookies = new GenericStackable();
+        $this->headers = new GenericStackable();
+
+        // reset to default headers
         $this->initDefaultHeaders();
     }
 
@@ -78,16 +96,6 @@ class Response implements HttpServletResponse
     }
 
     /**
-     * Returns the Http response instance.
-     *
-     * @return \TechDivision\Http\HttpResponseInterface The Http response instance
-     */
-    public function getHttpResponse()
-    {
-        return $this->httpResponse;
-    }
-
-    /**
      * Adds a cookie.
      *
      * @param \TechDivision\Http\HttpCookieInterface $cookie The cookie instance to add
@@ -96,7 +104,7 @@ class Response implements HttpServletResponse
      */
     public function addCookie(HttpCookieInterface $cookie)
     {
-        $this->getHttpResponse()->addCookie($cookie);
+        $this->cookies[$cookie->getName()] = $cookie;
     }
 
     /**
@@ -109,7 +117,7 @@ class Response implements HttpServletResponse
      */
     public function hasCookie($cookieName)
     {
-        return $this->getHttpResponse()->hasCookie($cookieName);
+        return isset($this->cookies[$cookieName]);
     }
 
     /**
@@ -117,21 +125,23 @@ class Response implements HttpServletResponse
      *
      * @param string $cookieName Name of the cookie to be checked
      *
-     * @return \TechDivision\Servlet\Http\Cookie $cookie The cookie instance
+     * @return \TechDivision\Http\HttpCookieInterface $cookie The cookie instance
      */
     public function getCookie($cookieName)
     {
-        return $this->getHttpResponse()->getCookie($cookieName);
+        if ($this->hasCookie($cookieName)) {
+            return $this->cookies[$cookieName];
+        }
     }
 
     /**
-     * Returns the cookies array.
+     * Returns the cookies.
      *
-     * @return array
+     * @return \ArrayAccess The cookies
      */
     public function getCookies()
     {
-        return $this->getHttpResponse()->getCookies();
+        return $this->cookies;
     }
 
     /**
@@ -141,7 +151,7 @@ class Response implements HttpServletResponse
      */
     public function getBodyContent()
     {
-        return $this->getHttpResponse()->getBodyContent();
+        return $this->bodyStream;
     }
 
     /**
@@ -151,7 +161,7 @@ class Response implements HttpServletResponse
      */
     public function resetBodyStream()
     {
-        return $this->getHttpResponse()->resetBodyStream();
+        $this->bodyStream = '';
     }
 
     /**
@@ -161,7 +171,7 @@ class Response implements HttpServletResponse
      */
     public function getBodyStream()
     {
-        return $this->getHttpResponse()->getBodyStream();
+        return $this->bodyStream;
     }
 
     /**
@@ -173,7 +183,7 @@ class Response implements HttpServletResponse
      */
     public function appendBodyStream($content)
     {
-        $this->getHttpResponse()->appendBodyStream($content);
+        $this->bodyStream .= $content;
     }
 
     /**
@@ -185,13 +195,31 @@ class Response implements HttpServletResponse
      *
      * @return integer The total number of bytes copied
      */
-    public function copyBodyStream($sourceStream, $maxlength = null, $offset = null)
+    public function copyBodyStream($sourceStream, $maxlength = null, $offset = 0)
     {
-        $this->getHttpResponse()->copyBodyStream($sourceStream, $maxlength, $offset);
+
+        // check if a stream has been passed
+        if (is_resource($sourceStream)) {
+            if ($offset && $maxlength) {
+                $this->bodyStream = stream_get_contents($sourceStream, $maxlength, $offset);
+            }
+            if (!$offset && $maxlength) {
+                $this->bodyStream = stream_get_contents($sourceStream, $maxlength);
+            }
+            if (!$offset && !$maxlength) {
+                $this->bodyStream = stream_get_contents($sourceStream);
+            }
+        } else { // if not, copy the string
+            $this->bodyStream = substr($sourceStream, $offset, $maxlength);
+
+        }
+
+        // return the sring length
+        return strlen($this->bodyStream);
     }
 
     /**
-     * Resets the stream resource pointing to body content.
+     * Resetss the stream resource pointing to body content.
      *
      * @param resource $bodyStream The body content stream resource
      *
@@ -199,11 +227,11 @@ class Response implements HttpServletResponse
      */
     public function setBodyStream($bodyStream)
     {
-        $this->getHttpResponse()->setBodyStream($bodyStream);
+        $this->copyBodyStream($bodyStream);
     }
 
     /**
-     * Sets the headers.
+     * Resets all headers by given array
      *
      * @param array $headers The headers array
      *
@@ -211,77 +239,103 @@ class Response implements HttpServletResponse
      */
     public function setHeaders(array $headers)
     {
-        $this->getHttpResponse()->setHeaders($headers);
+        $this->headers = $headers;
     }
 
     /**
-     * Returns the headers array.
+     * Return's all headers as array
      *
      * @return array
      */
     public function getHeaders()
     {
-        return $this->getHttpResponse()->getHeaders();
+        return $this->headers;
     }
 
     /**
-     * Adds a header to the internal array.
+     * Adds a header information got from connection. We've to take care that headers
+     * like Set-Cookie header can exist multiple times. To support this create an
+     * array that keeps the multiple header values.
      *
-     * @param string     $name   The header label e.g. Accept or Content-Length
-     * @param string|int $value  The header value
-     * @param boolean    $append If TRUE and a header with the passed name already exists, the value will be appended
+     * @param string  $name   The header name
+     * @param string  $value  The headers value
+     * @param boolean $append If TRUE and a header with the passed name already exists, the value will be appended
      *
      * @return void
      */
     public function addHeader($name, $value, $append = false)
     {
-        $this->getHttpResponse()->addHeader($name, $value, $append);
+        // normalize header names in case of 'Content-type' into 'Content-Type'
+        $name = str_replace(' ', '-', ucwords(str_replace('-', ' ', $name)));
+
+        // check if we've a Set-Cookie header to process
+        if ($this->hasHeader($name) && $append === true) {
+
+            // then check if we've already one cookie header available
+            if (is_array($headerValue = $this->getHeader($name))) {
+                $headerValue[] = $value;
+            } else {
+                $headerValue = array($headerValue, $value);
+            }
+
+            // if no cookie header simple add it
+            $this->headers[$name] = $headerValue;
+
+        } else {
+            $this->headers[$name] = $value;
+        }
     }
 
     /**
-     * Returns header info by given name
+     * Returns header by given name.
      *
-     * @param string $name The headers name to return
+     * @param string $name The header name to get
      *
-     * @return string|null
+     * @return mixed Usually a string, but can also be an array if we request the Set-Cookie header
+     * @throws \TechDivision\Http\HttpException Is thrown if the requested header is not available
      */
     public function getHeader($name)
     {
-        return $this->getHttpResponse()->getHeader($name);
+        if (isset($this->headers[$name]) === false) {
+            throw new HttpException("Response header '$name' not found");
+        }
+        return $this->headers[$name];
     }
 
     /**
-     * Returns response http version
+     * Return's the http version of the response
      *
      * @return string
      */
     public function getVersion()
     {
-        return $this->getHttpResponse()->getVersion();
+        return $this->version;
     }
 
     /**
-     * Removes one single header from the headers array.
+     * Removes the header with the passed name.
      *
-     * @param string $name The header to remove
+     * @param string $name Name of the header to remove
      *
      * @return void
      */
     public function removeHeader($name)
     {
-        $this->getHttpResponse()->removeHeader($name);
+        if (isset($this->headers[$name])) {
+            unset($this->headers[$name]);
+        }
     }
 
     /**
-     * Checks if header exists by given name.
+     * Check's if header exists by given name
      *
      * @param string $name The header name to check
      *
-     * @return boolean TRUE if the header is available, else FALSE
+     * @return boolean
      */
     public function hasHeader($name)
     {
-        return $this->getHttpResponse()->hasHeader($name);
+        return array_key_exists($name, $this->headers);
     }
 
     /**
@@ -293,7 +347,11 @@ class Response implements HttpServletResponse
      */
     public function setStatusCode($code)
     {
-        $this->getHttpResponse()->setStatusCode($code);
+        // set status code
+        $this->statusCode = $code;
+
+        // lookup reason phrase by code and set
+        $this->setStatusReasonPhrase(HttpProtocol::getStatusReasonPhraseByCode($code));
     }
 
     /**
@@ -303,11 +361,11 @@ class Response implements HttpServletResponse
      */
     public function getStatusCode()
     {
-        return $this->getHttpResponse()->getStatusCode();
+        return $this->statusCode;
     }
 
     /**
-     * Sets the status reason phrase
+     * Set's the status reason phrase
      *
      * @param string $statusReasonPhrase The reason phrase
      *
@@ -315,16 +373,50 @@ class Response implements HttpServletResponse
      */
     public function setStatusReasonPhrase($statusReasonPhrase)
     {
-        $this->getHttpResponse()->setStatusReasonPhrase($statusReasonPhrase);
+        $this->statusReasonPhrase = $statusReasonPhrase;
     }
 
     /**
-     * Returns the status phrase based on the status code
+     * Return's the status phrase based on the status code
      *
      * @return string
      */
     public function getStatusReasonPhrase()
     {
-        return $this->$this->getHttpResponse()->getStatusReasonPhrase();
+        return $this->statusReasonPhrase;
+    }
+
+    /**
+     * Set's state of response
+     *
+     * @param int $state The state value
+     *
+     * @return void
+     */
+    public function setState($state)
+    {
+        $this->state = $state;
+    }
+
+    /**
+     * Return's the current state
+     *
+     * @return int
+     */
+    public function getState()
+    {
+        return $this->state;
+    }
+
+    /**
+     * Compares current state with given state
+     *
+     * @param int $state The state to compare with
+     *
+     * @return bool Wheater state is equal (true) or not (false)
+     */
+    public function hasState($state)
+    {
+        return ($this->state === $state);
     }
 }

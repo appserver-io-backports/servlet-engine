@@ -23,15 +23,16 @@
 namespace TechDivision\ServletEngine\Http;
 
 use TechDivision\Context\Context;
+use TechDivision\Http\HttpCookieInterface;
 use TechDivision\Http\HttpRequestInterface;
 use TechDivision\Servlet\SessionUtils;
 use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Servlet\Http\HttpSessionWrapper;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Servlet\Http\HttpServletResponse;
+use TechDivision\ServletEngine\SessionManager;
 use TechDivision\Server\Dictionaries\ServerVars;
 use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
-use TechDivision\Http\HttpCookieInterface;
 
 /**
  * A Http servlet request implementation.
@@ -46,6 +47,13 @@ use TechDivision\Http\HttpCookieInterface;
  */
 class Request implements HttpServletRequest
 {
+
+    /**
+     * The body stream, a string because we can't serialize memory stream here.
+     *
+     * @var string
+     */
+    protected $bodyStream;
 
     /**
      * The ID of requested session.
@@ -76,13 +84,6 @@ class Request implements HttpServletRequest
     protected $servletPath;
 
     /**
-     * The context that allows access to session and server information.
-     *
-     * @var \TechDivision\ServletEngine\Http\RequestContext
-     */
-    protected $context;
-
-    /**
      * The Http request instance.
      *
      * @var \TechDivision\Http\HttpRequestInteface
@@ -111,10 +112,24 @@ class Request implements HttpServletRequest
     protected $dispatched = false;
 
     /**
+     * The request context that handles the request.
+     *
+     * @var \TechDivision\Context\Context
+     */
+    protected $context;
+
+    /**
+     * The array with the file parts.
+     *
+     * @var array
+     */
+    protected $parts = array();
+
+    /**
      * Injects the context that allows access to session and
      * server information.
      *
-     * @param \TechDivision\ServletEngine\Http\RequestContext $context The request context instance
+     * @param \TechDivision\Context\Context $context The request context instance
      *
      * @return void
      */
@@ -126,7 +141,7 @@ class Request implements HttpServletRequest
     /**
      * Injects the server variables.
      *
-     * @param \ArrayAccess $serverVars The server variables
+     * @param \TechDivision\Storage\GenericStackable $serverVars The server variables
      *
      * @return void
      */
@@ -161,11 +176,22 @@ class Request implements HttpServletRequest
      * Returns the context that allows access to session and
      * server information.
      *
-     * @return \TechDivision\ServletEngine\Http\RequestContext The request context
+     * @return \TechDivision\Context\Context The request context
      */
     public function getContext()
     {
         return $this->context;
+    }
+
+    /**
+     * Returns the context that allows access to session and
+     * server information.
+     *
+     * @return \TechDivision\ServletEngine\Http\RequestContext The request context
+     */
+    public function getRequestHandler()
+    {
+        return $this->requestHandler;
     }
 
     /**
@@ -219,21 +245,21 @@ class Request implements HttpServletRequest
      */
     public function getBodyContent()
     {
-        return $this->getHttpRequest()->getBodyContent();
+        return $this->getBodyStream();
     }
 
     /**
-     * Return request content
+     * Returns the body stream as a resource.
      *
-     * @return resource The request content
+     * @return resource The body stream
      */
     public function getBodyStream()
     {
-        return $this->getHttpRequest()->getBodyStream();
+        return $this->bodyStream;
     }
 
     /**
-     * Resets the stream resource pointing to body content.
+     * Resetss the stream resource pointing to body content.
      *
      * @param resource $bodyStream The body content stream resource
      *
@@ -241,7 +267,7 @@ class Request implements HttpServletRequest
      */
     public function setBodyStream($bodyStream)
     {
-        $this->getHttpRequest()->setBodyStream($bodyStream);
+        $this->bodyStream = $bodyStream;
     }
 
     /**
@@ -293,7 +319,9 @@ class Request implements HttpServletRequest
      */
     public function getPart($name)
     {
-        return $this->getHttpRequest()->getPart($name);
+        if (array_key_exists($name, $this->parts)) {
+            return $this->parts[$name];
+        }
     }
 
     /**
@@ -303,7 +331,23 @@ class Request implements HttpServletRequest
      */
     public function getParts()
     {
-        return $this->getHttpRequest()->getParts();
+        return $this->parts;
+    }
+
+    /**
+     * Adds a part to the parts collection.
+     *
+     * @param \TechDivision\ServletEngine\Http\Part $part A form part object
+     * @param string                                $name A manually defined name
+     *
+     * @return void
+     */
+    public function addPart(Part $part, $name = null)
+    {
+        if ($name == null) {
+            $name = $part->getName();
+        }
+        $this->parts[$name] = $part;
     }
 
     /**
@@ -361,7 +405,7 @@ class Request implements HttpServletRequest
     {
 
         // if no session has already been load, initialize the session manager
-        $manager = $this->getContext()->getSessionManager();
+        $manager = $this->getContext()->getManager(SessionManager::IDENTIFIER);
 
         // if no session manager was found, we don't support sessions
         if ($manager == null) {
@@ -670,7 +714,7 @@ class Request implements HttpServletRequest
     /**
      * Returns the array with the server variables.
      *
-     * @return array The array with the server variables
+     * @return \TechDivision\Storage\GenericStackable The array with the server variables
      */
     public function getServerVars()
     {

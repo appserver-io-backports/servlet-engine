@@ -21,13 +21,14 @@
 
 namespace TechDivision\ServletEngine;
 
-use \TechDivision\Servlet\ServletSession;
-use \TechDivision\Servlet\Http\HttpServletRequest;
-use \TechDivision\Servlet\Http\HttpServletResponse;
+use TechDivision\Servlet\ServletContext;
+use TechDivision\Servlet\Http\HttpServletRequest;
+use TechDivision\Servlet\Http\HttpServletResponse;
+use TechDivision\ServletEngine\Valve;
 
 /**
  * Valve implementation that will be executed by the servlet engine to handle
- * an incoming Http servlet request.
+ * an incoming HTTP servlet request.
  *
  * @category  Appserver
  * @package   TechDivision_ServletEngine
@@ -36,11 +37,12 @@ use \TechDivision\Servlet\Http\HttpServletResponse;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class ServletValve
+class ServletValve implements Valve
 {
 
     /**
-     * Load the actual context instance, the servlet and handle the request.
+     * Processes the request by invoking the request handler that executes the servlet
+     * in a protected context.
      *
      * @param \TechDivision\Servlet\ServletRequest  $servletRequest  The request instance
      * @param \TechDivision\Servlet\ServletResponse $servletResponse The response instance
@@ -50,10 +52,13 @@ class ServletValve
     public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
     {
 
-        // load the servlet context
-        $servletContext = $servletRequest->getContext()->getServletContext();
+        // load the servlet manager
+        $servletManager = $servletRequest->getContext()->getManager(ServletContext::IDENTIFIER);
 
         // locate and service the servlet
-        $servletContext->locate($servletRequest)->service($servletRequest, $servletResponse);
+        $servletManager->locate($servletRequest)->service($servletRequest, $servletResponse);
+
+        // dispatch this request, because we have finished processing it
+        $servletRequest->setDispatched(true);
     }
 }

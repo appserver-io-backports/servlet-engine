@@ -37,7 +37,7 @@ use TechDivision\Http\HttpProtocol;
  */
 class DigestAuthentication extends AbstractAuthentication
 {
-    
+
     /**
      * Authenticate the request against digest backend.
      *
@@ -54,7 +54,7 @@ class DigestAuthentication extends AbstractAuthentication
 
         // if client provided authentication data
         if ($authorizationData = $req->getHeader(HttpProtocol::HEADER_AUTHORIZATION)) {
-            
+
             // check if Authentication is DIGEST
             if (substr($authorizationData, 0, 6) == AbstractAuthentication::AUTHENTICATION_METHOD_DIGEST) {
 
@@ -65,10 +65,10 @@ class DigestAuthentication extends AbstractAuthentication
                     $bits = explode("=", $element);
                     $data[$bits[0]] = str_replace('"', '', $bits[1]);
                 }
-                
+
                 // initialize the adapter class
                 $authAdapterClass = 'TechDivision\ServletEngine\Authentication\Adapters\\' . ucfirst($adapterType) . 'Adapter';
-                
+
                 // instantiate configured authentication adapter
                 $authAdapter = new $authAdapterClass($config);
 

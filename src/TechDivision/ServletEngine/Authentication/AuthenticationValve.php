@@ -48,10 +48,10 @@ class AuthenticationValve implements Valve
      */
     public function invoke(HttpServletRequest $servletRequest, HttpServletResponse $servletResponse)
     {
-        
+
         // load the authentication manager
-        $authenticationManager = $servletRequest->getContext()->getAuthenticationManager();
-        
+        $authenticationManager = $servletRequest->getContext()->getManager(AuthenticationManager::IDENTIFIER);
+
         // authenticate the request
         if ($authenticationManager->handleRequest($servletRequest, $servletResponse) === false) {
             // dispatch this request, because we have to authenticat first

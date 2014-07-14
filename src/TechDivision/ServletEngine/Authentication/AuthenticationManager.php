@@ -24,6 +24,7 @@ namespace TechDivision\ServletEngine\Authentication;
 
 use TechDivision\Servlet\ServletRequest;
 use TechDivision\Servlet\ServletResponse;
+use TechDivision\Application\Interfaces\ManagerInterface;
 
 /**
  * The interface for all authentication manager to implement.
@@ -36,9 +37,16 @@ use TechDivision\Servlet\ServletResponse;
  * @license    http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link       http://www.appserver.io
  */
-interface AuthenticationManager
+interface AuthenticationManager extends ManagerInterface
 {
-    
+
+    /**
+     * The unique identifier to be registered in the application context.
+     *
+     * @var string
+     */
+    const IDENTIFIER = AuthenticationManager::class;
+
     /**
      * Handles request in order to authenticate.
      *

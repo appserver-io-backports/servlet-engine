@@ -21,6 +21,7 @@
 namespace TechDivision\ServletEngine;
 
 use TechDivision\Servlet\ServletSession;
+use TechDivision\Servlet\ServletContext;
 use TechDivision\Servlet\Http\HttpSession;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\ServletEngine\Http\Session;
@@ -28,7 +29,6 @@ use TechDivision\ServletEngine\SessionSettings;
 use TechDivision\Storage\StorageInterface;
 use TechDivision\Storage\StackableStorage;
 use TechDivision\Storage\GenericStackable;
-use TechDivision\Servlet\ServletContext;
 
 /**
  * A standard session manager implementation that provides session
@@ -105,12 +105,43 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     }
 
     /**
+     * Injects the servlet manager.
+     *
+     * @param \TechDivision\Servlet\ServletContext $servletManager The servlet manager
+     *
+     * @return void
+     */
+    public function injectServletManager(ServletContext $servletManager)
+    {
+        $this->servletManager = $servletManager;
+    }
+
+    /**
      * Initializes the session manager.
      *
      * @return void
      */
     public function initialize()
     {
+
+        // load the servlet manager with the session settings configured in web.xml
+        $servletManager = $this->getServletManager();
+
+        // prepare the default session save path
+        $sessionSavePath = $servletManager->getWebappPath() . DIRECTORY_SEPARATOR . 'WEB-INF' . DIRECTORY_SEPARATOR . 'sessions';
+
+        // load the settings, set the default session save path
+        $sessionSettings = $this->getSessionSettings();
+        $sessionSettings->setSessionSavePath($sessionSavePath);
+
+        // if we've session parameters defined in our servlet context
+        if ($servletManager->hasSessionParameters()) {
+
+            // we want to merge the session settings from the servlet context
+            $sessionSettings->mergeServletContext($servletManager);
+        }
+
+        // initialize the garbage collector and the persistence manager
         $this->getGarbageCollector()->initialize();
         $this->getPersistenceManager()->initialize();
     }
@@ -173,6 +204,16 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     public function getGarbageCollector()
     {
         return $this->garbageCollector;
+    }
+
+    /**
+     * Returns the servlet manager instance.
+     *
+     * @return \TechDivision\Servlet\ServletContext The servlet manager instance
+     */
+    public function getServletManager()
+    {
+        return $this->servletManager;
     }
 
     /**
@@ -285,5 +326,28 @@ class StandardSessionManager extends GenericStackable implements SessionManager
                 return $session;
             }
         }
+    }
+
+    /**
+     * Initializes the manager instance.
+     *
+     * @return void
+     * @see \TechDivision\Application\Interfaces\ManagerInterface::initialize()
+     */
+    public function getIdentifier()
+    {
+        return SessionManager::IDENTIFIER;
+    }
+
+    /**
+     * Returns the value with the passed name from the context.
+     *
+     * @param string $key The key of the value to return from the context.
+     *
+     * @return mixed The requested attribute
+     */
+    public function getAttribute($key)
+    {
+        throw new \Exception(sprintf('%s is not implemented yes', __METHOD__));
     }
 }

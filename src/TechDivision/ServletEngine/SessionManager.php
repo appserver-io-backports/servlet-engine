@@ -23,6 +23,7 @@ namespace TechDivision\ServletEngine;
 
 use TechDivision\Servlet\ServletSession;
 use TechDivision\ServletEngine\SessionSettings;
+use TechDivision\Application\Interfaces\ManagerInterface;
 
 /**
  * Interface for the session managers.
@@ -34,8 +35,15 @@ use TechDivision\ServletEngine\SessionSettings;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-interface SessionManager
+interface SessionManager extends ManagerInterface
 {
+
+    /**
+     * The unique identifier to be registered in the application context.
+     *
+     * @var string
+     */
+    const IDENTIFIER = SessionManager::class;
 
     /**
      * Creates a new session with the passed session ID and session name if give.
@@ -75,13 +83,6 @@ interface SessionManager
      * @return \TechDivision\Servlet\HttpSession The requested session
      */
     public function find($id);
-
-    /**
-     * Initializes the session manager.
-     *
-     * @return void
-     */
-    public function initialize();
 
     /**
      * Returns the session settings.

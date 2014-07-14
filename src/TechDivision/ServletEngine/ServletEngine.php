@@ -309,7 +309,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
      * @return bool
      * @throws \TechDivision\Server\Exceptions\ModuleException
      */
-    public function process(ConnectionRequestInterface $request, ConnectionResponseInterface $response,  RequestContextInterface $requestContext, $hook)
+    public function process(ConnectionRequestInterface $request, ConnectionResponseInterface $response, RequestContextInterface $requestContext, $hook)
     {
 
         try {
@@ -412,7 +412,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
     /**
      * Tries to find a request handler that matches the actual request and injects it into the request.
      *
-     * @param string $contextPath The context path we need a request handler to handle for
+     * @param \TechDivision\Servlet\Http\HttpServletRequest $servletRequest The servlet request we need a request handler to handle for
      *
      * @return \TechDivision\ServletEngine\RequestHandler The request handler
      */

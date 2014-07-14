@@ -87,7 +87,8 @@ class Part implements HttpPartInterface
      *
      * @return \TechDivision\ServletEngine\Http\Part The initialized servlet part
      */
-    public static function fromHttpRequest(HttpPartInterface $httpPart) {
+    public static function fromHttpRequest(HttpPartInterface $httpPart)
+    {
 
         // create a temporary filename
         $httpPart->write($tmpFilename = tempnam(ini_get('upload_tmp_dir'), 'tmp_'));
@@ -162,7 +163,7 @@ class Part implements HttpPartInterface
     }
 
     /**
-     * Sets the orig form filename
+     * Sets the orig form filename.
      *
      * @param string $filename The file's name
      *
@@ -174,7 +175,7 @@ class Part implements HttpPartInterface
     }
 
     /**
-     * Gets the orig firm filename
+     * Gets the orig form filename.
      *
      * @return string The file's name
      *
@@ -186,9 +187,9 @@ class Part implements HttpPartInterface
     }
 
     /**
-     * Sets the temporary filename
+     * Sets the temporary filename.
      *
-     * @param string $filename The temporary filename
+     * @param string $tmpFilename The temporary filename
      *
      * @return void
      */

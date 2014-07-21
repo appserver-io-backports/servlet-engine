@@ -7,3 +7,5 @@
 /.sonar
 sonar-project.properties
 build.properties
+/vendor
+composer.lock

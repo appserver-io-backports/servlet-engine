@@ -26,6 +26,7 @@ use TechDivision\Storage\GenericStackable;
 use TechDivision\Servlet\ServletContext;
 use TechDivision\Servlet\ServletRequest;
 use TechDivision\Servlet\ServletResponse;
+use TechDivision\Application\Interfaces\ApplicationInterface;
 
 /**
  * The authentication manager handles request which need Http authentication.
@@ -107,10 +108,12 @@ class StandardAuthenticationManager implements AuthenticationManager
     /**
      * Initializes the manager instance.
      *
+     * @param \TechDivision\Application\Interfaces\ApplicationInterface $application The application instance
+     *
      * @return void
      * @see \TechDivision\Application\Interfaces\ManagerInterface::initialize()
      */
-    public function initialize()
+    public function initialize(ApplicationInterface $application)
     {
     }
 
@@ -124,5 +127,23 @@ class StandardAuthenticationManager implements AuthenticationManager
     public function getAttribute($key)
     {
         throw new \Exception(sprintf('%s is not implemented yes', __METHOD__));
+    }
+
+    /**
+     * Factory method that adds a initialized manager instance to the passed application.
+     *
+     * @param \TechDivision\Application\Interfaces\ApplicationInterface $application The application instance
+     *
+     * @return void
+     * @see \TechDivision\Application\Interfaces\ManagerInterface::get()
+     */
+    public static function get(ApplicationInterface $application)
+    {
+
+        // initialize the authentication manager
+        $authenticationManager = new StandardAuthenticationManager();
+
+        // add the manager instance to the application
+        $application->addManager($authenticationManager);
     }
 }

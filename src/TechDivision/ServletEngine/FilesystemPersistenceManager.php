@@ -300,116 +300,6 @@ class FilesystemPersistenceManager extends \Thread implements PersistenceManager
     }
 
     /**
-     * Will set the owner and group on the passed directory.
-     *
-     * @return void
-     */
-    protected function prepareSessionDirectory()
-    {
-
-        // we don't do anything under Windows
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            return;
-        }
-
-        // set the umask that is necessary to create the directory
-        $this->initUmask();
-
-        // create the directory we want to store the sessions in
-        $sessionSavePath = new \SplFileInfo($this->getSessionSettings()->getSessionSavePath());
-
-        // we don't have a directory to change the user/group permissions for
-        if ($sessionSavePath->isDir() === false) {
-
-            // create the directory if necessary
-            if (mkdir($sessionSavePath) === false) {
-                throw new SessionDirectoryCreationException(sprintf('Directory %s to store sessions can\'t be created', $sessionSavePath));
-            }
-        }
-
-        $this->setUserRights($sessionSavePath);
-    }
-
-    /**
-     * Init the umask to use creating files/directories.
-     *
-     * @return void
-     */
-    protected function initUmask()
-    {
-
-        // don't do anything under Windows
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            return;
-        }
-
-        // set the configured umask to use
-        umask($newUmask = $this->getUmask());
-
-        // check if we have successfull set the umask
-        if (umask() != $newUmask) { // check if set, throw an exception if not
-            throw new \Exception("Can't set configured umask '$newUmask' found '" . umask() . "' instead");
-        }
-    }
-
-    /**
-     * Will set the owner and group on the passed directory.
-     *
-     * @param \SplFileInfo $targetDir The directory to set the rights for
-     *
-     * @return void
-     */
-    protected function setUserRights(\SplFileInfo $targetDir)
-    {
-        // we don't do anything under Windows
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            return;
-        }
-
-        // we don't have a directory to change the user/group permissions for
-        if ($targetDir->isDir() === false) {
-            return;
-        }
-
-        // As we might have several rootPaths we have to create several RecursiveDirectoryIterators.
-        $directoryIterator = new \RecursiveDirectoryIterator(
-            $targetDir,
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
-
-        // We got them all, now append them onto a new RecursiveIteratorIterator and return it.
-        $recursiveIterator = new \AppendIterator();
-            // Append the directory iterator
-            $recursiveIterator->append(
-                new \RecursiveIteratorIterator(
-                    $directoryIterator,
-                    \RecursiveIteratorIterator::SELF_FIRST,
-                    \RecursiveIteratorIterator::CATCH_GET_CHILD
-                )
-            );
-
-        // Check for the existence of a user
-        $user = $this->getUser();
-        if (!empty($user)) {
-
-            // Change the rights of everything within the defined dirs
-            foreach ($recursiveIterator as $file) {
-                chown($file, $user);
-            }
-        }
-
-        // Check for the existence of a group
-        $group = $this->getGroup();
-        if (!empty($group)) {
-
-            // Change the rights of everything within the defined dirs
-            foreach ($recursiveIterator as $file) {
-                chgrp($file, $group);
-            }
-        }
-    }
-
-    /**
      * This method will be invoked by the engine after the
      * servlet has been serviced.
      *
@@ -508,9 +398,6 @@ class FilesystemPersistenceManager extends \Thread implements PersistenceManager
      */
     public function initialize()
     {
-
-        // prepare the directory to store the sessions in
-        $this->prepareSessionDirectory();
 
         // prepare the glob to load the session
         $glob = $this->getSessionSavePath($this->getSessionSettings()->getSessionFilePrefix() . '*');

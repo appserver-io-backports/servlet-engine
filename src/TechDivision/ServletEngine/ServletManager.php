@@ -27,6 +27,7 @@ use TechDivision\Servlet\ServletContext;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\ServletEngine\ServletConfiguration;
 use TechDivision\ServletEngine\InvalidServletMappingException;
+use TechDivision\Application\Interfaces\ApplicationInterface;
 
 /**
  * The servlet manager handles the servlets registered for the application.
@@ -89,9 +90,12 @@ class ServletManager extends \Stackable implements ServletContext
      * Has been automatically invoked by the container after the application
      * instance has been created.
      *
-     * @return \TechDivision\ServletEngine\ServletManager The servlet manager instance itself
+     * @param \TechDivision\Application\Interfaces\ApplicationInterface $application The application instance
+     *
+     * @return void
+     * @see \TechDivision\Application\Interfaces\ManagerInterface::initialize()
      */
-    public function initialize()
+    public function initialize(ApplicationInterface $application)
     {
         $this->registerServlets();
     }
@@ -420,5 +424,28 @@ class ServletManager extends \Stackable implements ServletContext
     public function getAttribute($key)
     {
         throw new \Exception(sprintf('%s is not implemented yes', __METHOD__));
+    }
+
+    /**
+     * Factory method that adds a initialized manager instance to the passed application.
+     *
+     * @param \TechDivision\Application\Interfaces\ApplicationInterface $application The application instance
+     *
+     * @return void
+     * @see \TechDivision\Application\Interfaces\ManagerInterface::get()
+     */
+    public static function get(ApplicationInterface $application)
+    {
+
+        // initialize the servlet locator
+        $servletLocator = new ServletLocator();
+
+        // initialize the servlet manager
+        $servletManager = new ServletManager();
+        $servletManager->injectWebappPath($application->getWebappPath());
+        $servletManager->injectResourceLocator($servletLocator);
+
+        // add the manager instance to the application
+        $application->addManager($servletManager);
     }
 }

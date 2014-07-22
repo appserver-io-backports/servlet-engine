@@ -9,9 +9,9 @@
         "techdivision/server": "0.1.*",
         "techdivision/servlet": "0.6.*",
         "techdivision/storage": "0.5.*",
-        "techdivision/appserver": "0.7.*",
+        "techdivision/appserver": "0.8.*",
         "techdivision/connection": "0.1.*",
-        "techdivision/application": "0.1.*"
+        "techdivision/application": "0.2.*"
     },
     "autoload": {
         "psr-0": {

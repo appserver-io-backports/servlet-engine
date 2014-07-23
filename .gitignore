@@ -5,7 +5,8 @@
 /target
 /.idea
 /.sonar
+/vendor
 sonar-project.properties
 build.properties
-/vendor
 composer.lock
+composer.phar

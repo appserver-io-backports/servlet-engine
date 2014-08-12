@@ -370,7 +370,15 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             }, $requestHandler, $servletRequest, $servletResponse);
 
             // wait until the response has been dispatched
-            while ($servletResponse->hasState(HttpResponseStates::DISPATCH) === false) {
+            while (true) {
+
+                // wait until request has been finished and response is dispatched
+                if ($requestHandler->isWaiting() && $servletResponse->hasState(HttpResponseStates::DISPATCH)) {
+                    break;
+                }
+
+                // try to reduce system load
+                usleep(1000);
             }
 
             // re-attach the request handler to the pool
@@ -420,7 +428,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
     {
 
         // explode host and port from the host header
-        list ($host, $port) = explode(':', $servletRequest->getHeader(HttpProtocol::HEADER_HOST));
+        list ($host, ) = explode(':', $servletRequest->getHeader(HttpProtocol::HEADER_HOST));
 
         // prepare the request URL we want to match
         $url =  $host . $servletRequest->getUri();
@@ -446,6 +454,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
                             // mark the request handler working and initialize the found one
                             $this->workingRequestHandlers[$threadId] = true;
 
+                            // return the request handler instance
                             return $requestHandler;
                         }
                     }
@@ -457,7 +466,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
         }
 
         // if not throw a bad request exception
-        throw new BadRequestException(sprintf('Can\'t find application for URI %s', $uri));
+        throw new BadRequestException(sprintf('Can\'t find application for URI %s', $servletRequest->getUri()));
     }
 
     /**
@@ -525,13 +534,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
                 $servletRequest->setServletPath($servletPath);
 
                 // we set the path info, what is the request URI with stripped dir- and basename
-                $servletRequest->setPathInfo(
-                    $pathInfo = str_replace(
-                        $servletPath,
-                        '',
-                        $uriWithoutQueryString
-                    )
-                );
+                $servletRequest->setPathInfo(str_replace($servletPath, '', $uriWithoutQueryString));
 
                 // we've found what we were looking for, so break here
                 break;

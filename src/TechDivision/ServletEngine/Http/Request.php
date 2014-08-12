@@ -32,7 +32,7 @@ use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Servlet\Http\HttpServletResponse;
 use TechDivision\ServletEngine\SessionManager;
 use TechDivision\Server\Dictionaries\ServerVars;
-use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
+use TechDivision\Application\Interfaces\ApplicationInterface;
 
 /**
  * A Http servlet request implementation.

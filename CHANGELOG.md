@@ -1,3 +1,14 @@
+# Version 0.7.3
+
+## Bugfixes
+
+* Resolve PHPMD warnings and errors
+* Bugfix for endless loop in ServletEngine::process() with concurrent requests
+
+## Features
+
+* None
+
 # Version 0.7.2
 
 ## Bugfixes

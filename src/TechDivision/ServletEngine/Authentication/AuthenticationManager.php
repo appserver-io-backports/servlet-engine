@@ -45,7 +45,7 @@ interface AuthenticationManager extends ManagerInterface
      *
      * @var string
      */
-    const IDENTIFIER = AuthenticationManager::class;
+    const IDENTIFIER = 'TechDivision\ServletEngine\Authentication\AuthenticationManager';
 
     /**
      * Handles request in order to authenticate.

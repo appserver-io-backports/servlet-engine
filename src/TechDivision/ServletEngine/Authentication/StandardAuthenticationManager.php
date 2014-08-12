@@ -57,7 +57,7 @@ class StandardAuthenticationManager implements AuthenticationManager
         $context = $servletRequest->getContext();
 
         // iterate over all servlets and return the matching one
-        foreach ($context->getManager(ServletContext::IDENTIFIER)->getSecuredUrlConfigs() as $webappPath => $securedUrlConfig) {
+        foreach ($context->getManager(ServletContext::IDENTIFIER)->getSecuredUrlConfigs() as $securedUrlConfig) {
 
             if ($securedUrlConfig == null) {
                 continue;

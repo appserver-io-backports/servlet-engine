@@ -22,6 +22,7 @@
 
 namespace TechDivision\ServletEngine\Http;
 
+use TechDivision\Http\HttpProtocol;
 use TechDivision\Http\HttpPartInterface;
 
 /**

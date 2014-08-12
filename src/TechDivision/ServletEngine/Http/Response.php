@@ -24,6 +24,7 @@ namespace TechDivision\ServletEngine\Http;
 
 use TechDivision\Storage\GenericStackable;
 use TechDivision\Http\HttpProtocol;
+use TechDivision\Http\HttpException;
 use TechDivision\Http\HttpResponseStates;
 use TechDivision\Http\HttpCookieInterface;
 use TechDivision\Http\HttpResponseInterface;

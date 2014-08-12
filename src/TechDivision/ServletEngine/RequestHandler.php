@@ -23,6 +23,7 @@ namespace TechDivision\ServletEngine;
 
 use \TechDivision\Http\HttpResponseStates;
 use TechDivision\Application\Interfaces\ApplicationInterface;
+use TechDivision\Server\Dictionaries\ServerVars;
 
 /**
  * This is a request handler that is necessary to process each request of an
@@ -111,6 +112,9 @@ class RequestHandler extends \Thread
     public function run()
     {
 
+        // register shutdown handler
+        register_shutdown_function(array(&$this, "shutdown"));
+
         while (true) {
 
             // synchronize the response data
@@ -123,6 +127,9 @@ class RequestHandler extends \Thread
                 if ($self->handleRequest) {
 
                     try {
+
+                        // reset the flag
+                        $self->handleRequest = false;
 
                         // reset request/response instance
                         $application = $self->application;
@@ -138,7 +145,7 @@ class RequestHandler extends \Thread
                         $servletRequest->setContextPath($contextPath = '/' . $application->getName());
 
                         // prepare the path information depending if we're in a vhost or not
-                        if ($application->isVhostOf($host) === false) {
+                        if ($application->isVhostOf($servletRequest->getServerVar(ServerVars::SERVER_NAME)) === false) {
                             $servletRequest->setServletPath(str_replace($contextPath, '', $servletRequest->getServletPath()));
                         }
 
@@ -154,18 +161,31 @@ class RequestHandler extends \Thread
                         }
 
                     } catch (\Exception $e) {
+                        error_log($e->__toString());
                         $servletResponse->appendBodyStream($e->__toString());
                         $servletResponse->setStatusCode(500);
                     }
 
                     // set the request state to dispatched
                     $servletResponse->setState(HttpResponseStates::DISPATCH);
-
-                    // reset the flag
-                    $self->handleRequest = false;
                 }
 
             }, $this);
+        }
+    }
+
+    /**
+     * Does shutdown logic for request handler if something went wrong and produces
+     * a fatal error for example.
+     *
+     * @return void
+     */
+    public function shutdown()
+    {
+        // check if there was a fatal error caused shutdown
+        $lastError = error_get_last();
+        if ($lastError['type'] === E_ERROR || $lastError['type'] === E_USER_ERROR) {
+            error_log($lastError['message']);
         }
     }
 }

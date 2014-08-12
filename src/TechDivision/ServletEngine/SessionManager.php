@@ -43,7 +43,7 @@ interface SessionManager extends ManagerInterface
      *
      * @var string
      */
-    const IDENTIFIER = SessionManager::class;
+    const IDENTIFIER = 'TechDivision\ServletEngine\SessionManager';
 
     /**
      * Creates a new session with the passed session ID and session name if give.

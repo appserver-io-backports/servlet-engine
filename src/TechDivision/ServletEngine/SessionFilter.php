@@ -72,7 +72,7 @@ class SessionFilter extends \FilterIterator
         $splFileInfo = $this->getInnerIterator()->current();
 
         // calculate the maxiumum age of sessions we want to load
-        $maximumAge = time() - $this->maximumAge;
+        $aTime = time() - $this->maximumAge;
 
         // compare the session files age agains the maximum age
         if ($splFileInfo->getATime() < $aTime) {

@@ -416,7 +416,7 @@ class FilesystemPersistenceManager extends \Thread implements PersistenceManager
             } catch (SessionDataNotReadableException $sdnre) {
 
                 // this maybe happens when the session file is corrupt
-                $this->removeSessionFile($pathname);
+                $this->removeSessionFile($sessionFile->getPathname());
             }
         }
     }

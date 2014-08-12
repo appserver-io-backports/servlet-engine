@@ -200,8 +200,9 @@ class StandardGarbageCollector extends \Thread implements GarbageCollector
                                 $session->destroy(sprintf('Session %s was inactive for %s seconds, more than the configured timeout of %s seconds.', $session->getId(), $lastActivitySecondsAgo, $inactivityTimeout));
 
                             }
+
                             // prepare the session filename
-                            $sessionFilename = $this->getSessionSavePath($this->getSessionSettings()->getSessionFilePrefix() . $id);
+                            $sessionFilename = $this->getSessionSavePath($this->getSessionSettings()->getSessionFilePrefix() . $session->getId());
 
                             // delete the file containing the session data if available
                             if (file_exists($sessionFilename)) {

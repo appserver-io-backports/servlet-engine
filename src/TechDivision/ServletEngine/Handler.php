@@ -22,7 +22,7 @@
 namespace TechDivision\ServletEngine;
 
 use TechDivision\Storage\GenericStackable;
-use TechDivision\ApplicationServer\Interfaces\ApplicationInterface;
+use TechDivision\Application\Interfaces\ApplicationInterface;
 
 /**
  * Handler implementation.

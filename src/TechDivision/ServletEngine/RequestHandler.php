@@ -182,9 +182,6 @@ class RequestHandler extends \Thread
      */
     public function shutdown()
     {
-
-        error_log(__METHOD__ . ':' . __LINE__);
-
         // check if there was a fatal error caused shutdown
         $lastError = error_get_last();
         if ($lastError['type'] === E_ERROR || $lastError['type'] === E_USER_ERROR) {

@@ -1,3 +1,15 @@
+# Version 0.7.4
+
+## Bugfixes
+
+* None
+
+## Features
+
+* Add shutdown functionality for request handlers
+* Handle a maximum of 50 request before shutdown request handler
+* Integrate RequestHandlerManager class to asynchronously restart request handlers that has been shutdown
+
 # Version 0.7.3
 
 ## Bugfixes

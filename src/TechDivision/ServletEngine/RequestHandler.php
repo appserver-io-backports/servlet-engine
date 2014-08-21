@@ -40,6 +40,13 @@ class RequestHandler extends \Thread
 {
 
     /**
+     * The number of request to be handled.
+     *
+     * @var integer
+     */
+    const HANDLE_REQUESTS = 50;
+
+    /**
      * The application instance we're processing requests for.
      *
      * @return \TechDivision\ApplicationServer\Interfaces\ApplicationInterface
@@ -75,6 +82,13 @@ class RequestHandler extends \Thread
     protected $handleRequest;
 
     /**
+     * Flag if request handler should be restarted by servlet engine
+     *
+     * @var boolean
+     */
+    protected $shouldRestart;
+
+    /**
      * Initializes the request handler with the application and the
      * valves to be processed
      *
@@ -88,9 +102,10 @@ class RequestHandler extends \Thread
         $this->application = $application;
         $this->valves = $valves;
 
+        // we don't want to restart now
         $this->handleRequest = false;
 
-        // start the request processing
+        // autostart the handler
         $this->start();
     }
 
@@ -115,7 +130,13 @@ class RequestHandler extends \Thread
         // register shutdown handler
         register_shutdown_function(array(&$this, "shutdown"));
 
-        while (true) {
+        // set should restart initial flag
+        $this->shouldRestart = false;
+
+        // start handling requests
+        $handledRequests = 0;
+
+        do { // let's start handling requests
 
             // synchronize the response data
             $this->synchronized(function ($self) {
@@ -171,7 +192,21 @@ class RequestHandler extends \Thread
                 }
 
             }, $this);
-        }
+
+            // raise the number of handled requests
+            $handledRequests++;
+
+        } while ($handledRequests < RequestHandler::HANDLE_REQUESTS); // check if we've to handle anymore requests
+    }
+
+    /**
+     * Returns TRUE if the request handler should be restarted by the servlet engine.
+     *
+     * @return boolean TRUE if the request handler should be restarted
+     */
+    public function shouldRestart()
+    {
+        return $this->shouldRestart;
     }
 
     /**
@@ -182,10 +217,14 @@ class RequestHandler extends \Thread
      */
     public function shutdown()
     {
+
         // check if there was a fatal error caused shutdown
         $lastError = error_get_last();
         if ($lastError['type'] === E_ERROR || $lastError['type'] === E_USER_ERROR) {
             error_log($lastError['message']);
         }
+
+        // this request handler has to be restarted
+        $this->shouldRestart = true;
     }
 }

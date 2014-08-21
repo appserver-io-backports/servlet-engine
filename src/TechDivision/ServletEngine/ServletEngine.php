@@ -1,7 +1,7 @@
 <?php
 
 /**
- * TechDivision\ServletEngine\Engine
+ * TechDivision\ServletEngine\ServletEngine
  *
  * PHP version 5
  *
@@ -168,8 +168,10 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             $this->initHandlers();
             $this->initVirtualHosts();
             $this->initApplications();
-            $this->initRequestHandlers();
             $this->initUrlMappings();
+
+            // initialize the request handler manager
+            $this->initRequestHandlerManager();
 
         } catch (\Exception $e) {
             throw new ModuleException($e);
@@ -268,11 +270,11 @@ class ServletEngine extends GenericStackable implements ModuleInterface
     }
 
     /**
-     * Initialize the request handlers.
+     * Initialize the request handler manager.
      *
      * @return void
      */
-    public function initRequestHandlers()
+    public function initRequestHandlerManager()
     {
 
         // create a local copy of the valves
@@ -286,6 +288,9 @@ class ServletEngine extends GenericStackable implements ModuleInterface
                 $this->requestHandlers[$applicationName][$requestHandler->getThreadId()] = $requestHandler;
             }
         }
+
+        // initialize the request handler manager instance
+        $this->requestHandlerManager = new RequestHandlerManager($this->requestHandlers, $this->applications, $this->valves);
     }
 
     /**
@@ -373,7 +378,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             while (true) {
 
                 // wait until request has been finished and response is dispatched
-                if ($requestHandler->isWaiting() && $servletResponse->hasState(HttpResponseStates::DISPATCH)) {
+                if (($requestHandler->isWaiting() || $requestHandler->shouldRestart()) && $servletResponse->hasState(HttpResponseStates::DISPATCH)) {
                     break;
                 }
 
@@ -409,6 +414,9 @@ class ServletEngine extends GenericStackable implements ModuleInterface
 
             // set response state to be dispatched after this without calling other modules process
             $response->setState(HttpResponseStates::DISPATCH);
+
+            // notify the request handler to check for reuqest handler instances
+            $this->requestHandlerManager->notify();
 
         } catch (ModuleException $me) {
             throw $me;
@@ -449,7 +457,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
                     foreach ($requestHandlers as $requestHandler) {
 
                         // if we've found a NOT working request handler, we stop
-                        if (!isset($this->workingRequestHandlers[$threadId = $requestHandler->getThreadId()])) {
+                        if (!isset($this->workingRequestHandlers[$threadId = $requestHandler->getThreadId()]) && !$requestHandler->shouldRestart()) {
 
                             // mark the request handler working and initialize the found one
                             $this->workingRequestHandlers[$threadId] = true;

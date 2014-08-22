@@ -44,7 +44,7 @@ class RequestHandler extends \Thread
      *
      * @var integer
      */
-    const HANDLE_REQUESTS = 50;
+    const HANDLE_REQUESTS = 10;
 
     /**
      * The application instance we're processing requests for.

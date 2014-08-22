@@ -64,6 +64,13 @@ class ServletEngine extends GenericStackable implements ModuleInterface
     const MODULE_NAME = 'servlet';
 
     /**
+     * Timeout to wait for a free request handler: 1 s
+     *
+     * @var integer
+     */
+    const REQUEST_HANDLER_WAIT_TIMEOUT = 1000000;
+
+    /**
      * Initialize the module.
      *
      * @return void
@@ -279,18 +286,24 @@ class ServletEngine extends GenericStackable implements ModuleInterface
 
         // create a local copy of the valves
         $valves = $this->valves;
+        $requestHandlers = $this->requestHandlers;
+        $applications = $this->applications;
+
+        // we also want to pass a system logger instance to the request handler manager
+        $systemLogger = $this->serverContext->getContainer()->getInitialContext()->getSystemLogger();
 
         // we want to prepare an request for each application and each worker
         foreach ($this->getApplications() as $applicationName => $application) {
             $this->requestHandlers[$applicationName] = new GenericStackable();
-            for ($i = 0; $i < 4; $i++) {
+            for ($i = 0; $i < RequestHandlerManager::POOL_SIZE; $i++) {
                 $requestHandler = new RequestHandler($application, $valves);
                 $this->requestHandlers[$applicationName][$requestHandler->getThreadId()] = $requestHandler;
             }
         }
 
+
         // initialize the request handler manager instance
-        $this->requestHandlerManager = new RequestHandlerManager($this->requestHandlers, $this->applications, $this->valves);
+        $this->requestHandlerManager = new RequestHandlerManager($systemLogger, $requestHandlers, $applications, $valves);
     }
 
     /**
@@ -333,6 +346,9 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             if ($requestContext->getServerVar(ServerVars::SERVER_HANDLER) !== $this->getModuleName()) {
                 return;
             }
+
+            // notify the request handler to make sure we've at least one free request handler
+            $this->requestHandlerManager->notify();
 
             // intialize servlet session, request + response
             $servletRequest = new Request();
@@ -415,9 +431,6 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             // set response state to be dispatched after this without calling other modules process
             $response->setState(HttpResponseStates::DISPATCH);
 
-            // notify the request handler to check for reuqest handler instances
-            $this->requestHandlerManager->notify();
-
         } catch (ModuleException $me) {
             throw $me;
         } catch (\Exception $e) {
@@ -450,8 +463,11 @@ class ServletEngine extends GenericStackable implements ModuleInterface
                 // load the applications request handlers
                 $requestHandlers = $this->requestHandlers[$applicationName];
 
+                // reset the wait time
+                $waited = 0;
+
                 // we search for a request handler as long $handlerFound is empty
-                while (true) {
+                while ($waited < ServletEngine::REQUEST_HANDLER_WAIT_TIMEOUT) {
 
                     // search a NOT working request handler
                     foreach ($requestHandlers as $requestHandler) {
@@ -467,9 +483,15 @@ class ServletEngine extends GenericStackable implements ModuleInterface
                         }
                     }
 
-                    // reduce CPU load a bit
+                    // reduce CPU load
                     usleep(100); // === 0.1 ms
+
+                    // raise wait time
+                    $waited += 100;
                 }
+
+                // throw an exception if we can't handle the request within the defined timeout
+                throw new RequestHandlerTimeoutException(sprintf('No request handler available to handle request for URI %s', $servletRequest->getUri()));
             }
         }
 

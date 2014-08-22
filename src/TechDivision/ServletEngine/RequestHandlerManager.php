@@ -31,6 +31,34 @@ class RequestHandlerManager extends \Thread
 {
 
     /**
+     * The pool size of request handlers for each application.
+     *
+     * @var integer
+     */
+    const POOL_SIZE = 4;
+
+    /**
+     * Wait timeout in microseconds until we'll be notfied to check if we've to create new request handlers.
+     *
+     * @var integer
+     */
+    const WAIT_TIMEOUT = 10000000;
+
+    /**
+     * The number of waiting handlers we always want to have in spare.
+     *
+     * @var integer
+     */
+    const MINIMUM_SPARE_HANDLERS = 2;
+
+    /**
+     * The system logger instance.
+     *
+     * @var \Psr\Log\LoggerInterface
+     */
+    protected $systemLogger;
+
+    /**
      * The request handlers we have to manage.
      *
      * @var \TechDivision\Storage\GenericStackable
@@ -54,14 +82,16 @@ class RequestHandlerManager extends \Thread
     /**
      * Initializes the request handler manager instance.
      *
+     * @param \Psr\Log\LoggerInterface               $systemLogger    The system logger instance
      * @param \TechDivision\Storage\GenericStackable $requestHandlers The request handlers we have to manage
      * @param \TechDivision\Storage\GenericStackable $applications    The valves the request handler has to process for each request
      * @param \TechDivision\Storage\GenericStackable $valves          The applications that has to be bound to a request handler
      */
-    public function __construct($requestHandlers, $applications, $valves)
+    public function __construct($systemLogger, $requestHandlers, $applications, $valves)
     {
 
         // set the passed variables
+        $this->systemLogger = $systemLogger;
         $this->requestHandlers = $requestHandlers;
         $this->applications = $applications;
         $this->valves = $valves;
@@ -81,18 +111,39 @@ class RequestHandlerManager extends \Thread
         // create a local copy of the valves
         $valves = $this->valves;
         $applications = $this->applications;
+        $systemLogger = $this->systemLogger;
         $requestHandlers = $this->requestHandlers;
 
         while (true) { // we run forever and make sure that enough request handlers are available
 
-            // wait until we'll be notfied to check if we've to create new request handlers
-            $this->wait();
+            // wait (max. 10 s) until we'll be notfied to check if we've to create new request handlers
+            $this->wait(RequestHandlerManager::WAIT_TIMEOUT);
 
             // we want to prepare an request for each application and each worker
             foreach ($applications as $applicationName => $application) {
 
+                // initialize the counter for the actual pool size
+                $actualPoolSize = sizeof($requestHandlers[$applicationName]);
+                $waitingRequestHandlers = 0;
+
                 // shutdown the outdated request handlers
                 foreach ($requestHandlers[$applicationName] as $threadId => $requestHandler) {
+
+                    // this one is waiting, so we've one in spare
+                    if ($requestHandlers[$applicationName][$threadId]->shouldRestart() === false &&
+                        $requestHandlers[$applicationName][$threadId]->isWaiting() === true
+                    ) {
+                        $waitingRequestHandlers++;
+                        continue;
+                    }
+
+                    // this one is working
+                    if ($requestHandlers[$applicationName][$threadId]->shouldRestart() === false &&
+                        $requestHandlers[$applicationName][$threadId]->isWaiting() === false
+                    ) {
+                        $waitingRequestHandlers--;
+                        continue;
+                    }
 
                     // check if a handler should be restarted
                     if ($requestHandlers[$applicationName][$threadId]->shouldRestart()) {
@@ -100,10 +151,65 @@ class RequestHandlerManager extends \Thread
                         // remove the handler
                         unset($requestHandlers[$applicationName][$threadId]);
 
-                        // add a new one
+                        // we've removed this one
+                        $waitingRequestHandlers--;
+
+                        // log a debug message to the system log
+                        $systemLogger->notice(
+                            sprintf(
+                                'Successfully removed request handler %s for application \'%s\' from pool, pool size is: %d',
+                                $threadId,
+                                $applicationName,
+                                sizeof($requestHandlers[$applicationName])
+                            )
+                        );
+                    }
+                }
+
+                // we want at least 2 request handlers in spare
+                if ($actualPoolSize < RequestHandlerManager::POOL_SIZE ||
+                    $waitingRequestHandlers < RequestHandlerManager::MINIMUM_SPARE_HANDLERS
+                ) {
+
+                    // initialize the number request handlers to start
+                    $z = 0;
+
+                    // make sure, that at least the minimum pool size of request handlers is available
+                    if (($y = RequestHandlerManager::POOL_SIZE - $actualPoolSize) > 0) {
+                        $z += $y;
+                    }
+
+                    // if the pool size of worker is available, make sure, that at least the minimum
+                    // number of spare request handlers are available
+                    if (($x = RequestHandlerManager::MINIMUM_SPARE_HANDLERS - $waitingRequestHandlers) > 0) {
+                        $z += $x;
+                    }
+
+                    // create the free handlers
+                    for ($i = 0; $i < $z; $i++) {
+
+                        // create and start a new request handler
                         $requestHandler = new RequestHandler($application, $valves);
                         $requestHandlers[$applicationName][$requestHandler->getThreadId()] = $requestHandler;
+
+                        // log a debug message to the system log
+                        $systemLogger->notice(
+                            sprintf(
+                                'Successfully started a new request handler %s for application %s',
+                                $applicationName,
+                                $requestHandler->getThreadId()
+                            )
+                        );
                     }
+
+                    // log a debug message to the system log
+                    $systemLogger->notice(
+                        sprintf(
+                            'Pool size of request handlers for application %s is: %d',
+                            $applicationName,
+                            sizeof($requestHandlers[$applicationName])
+                        )
+                    );
                 }
             }
         }

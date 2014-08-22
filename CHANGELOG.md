@@ -1,3 +1,14 @@
+# Version 0.7.5
+
+## Bugfixes
+
+* None
+
+## Features
+
+* Let RequestHandlerManager handle RequestHandler instances dynamically
+* Throw RequestHandlerTimeoutException when we can't handle request within defined timeout
+
 # Version 0.7.4
 
 ## Bugfixes

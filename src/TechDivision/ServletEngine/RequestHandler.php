@@ -47,6 +47,13 @@ class RequestHandler extends \Thread
     const HANDLE_REQUESTS = 10;
 
     /**
+     * The number of seconds requests can be handled.
+     *
+     * @var integer
+     */
+    const TIME_TO_LIVE = 10;
+
+    /**
      * The application instance we're processing requests for.
      *
      * @return \TechDivision\ApplicationServer\Interfaces\ApplicationInterface
@@ -136,6 +143,9 @@ class RequestHandler extends \Thread
         // start handling requests
         $handledRequests = 0;
 
+        // initialize the time we've been started to handle requests
+        $createdAt = time();
+
         do { // let's start handling requests
 
             // synchronize the response data
@@ -196,7 +206,8 @@ class RequestHandler extends \Thread
             // raise the number of handled requests
             $handledRequests++;
 
-        } while ($handledRequests < RequestHandler::HANDLE_REQUESTS); // check if we've to handle anymore requests
+        // check if we've to handle anymore requests
+        } while ($handledRequests < RequestHandler::HANDLE_REQUESTS || $createdAt + RequestHandler::TIME_TO_LIVE > time());
     }
 
     /**

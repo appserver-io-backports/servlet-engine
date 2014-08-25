@@ -2,7 +2,7 @@
 
 ## Bugfixes
 
-* None
+* Bugfix invalid counter for waiting RequestHandler instances
 
 ## Features
 

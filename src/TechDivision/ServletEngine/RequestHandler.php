@@ -152,7 +152,7 @@ class RequestHandler extends \Thread
             $this->synchronized(function ($self) {
 
                 // wait until we've to handle a new request
-                $self->wait();
+                $self->wait(1000000 * RequestHandler::TIME_TO_LIVE);
 
                 // check if we've to handle a request
                 if ($self->handleRequest) {

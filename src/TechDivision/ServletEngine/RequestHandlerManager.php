@@ -42,7 +42,7 @@ class RequestHandlerManager extends \Thread
      *
      * @var integer
      */
-    const WAIT_TIMEOUT = 10000000;
+    const WAIT_TIMEOUT = 5000000;
 
     /**
      * The number of waiting handlers we always want to have in spare.
@@ -116,6 +116,14 @@ class RequestHandlerManager extends \Thread
 
         while (true) { // we run forever and make sure that enough request handlers are available
 
+            // log a message that we're waiting to manage request handlers
+            $systemLogger->debug(
+                sprintf(
+                    'Waiting %d s to manage request handlers',
+                    RequestHandlerManager::WAIT_TIMEOUT / 1000000
+                )
+            );
+
             // wait (max. 10 s) until we'll be notfied to check if we've to create new request handlers
             $this->wait(RequestHandlerManager::WAIT_TIMEOUT);
 
@@ -137,25 +145,14 @@ class RequestHandlerManager extends \Thread
                         continue;
                     }
 
-                    // this one is working
-                    if ($requestHandlers[$applicationName][$threadId]->shouldRestart() === false &&
-                        $requestHandlers[$applicationName][$threadId]->isWaiting() === false
-                    ) {
-                        $waitingRequestHandlers--;
-                        continue;
-                    }
-
                     // check if a handler should be restarted
                     if ($requestHandlers[$applicationName][$threadId]->shouldRestart()) {
 
                         // remove the handler
                         unset($requestHandlers[$applicationName][$threadId]);
 
-                        // we've removed this one
-                        $waitingRequestHandlers--;
-
                         // log a debug message to the system log
-                        $systemLogger->notice(
+                        $systemLogger->debug(
                             sprintf(
                                 'Successfully removed request handler %s for application \'%s\' from pool, pool size is: %d',
                                 $threadId,
@@ -176,12 +173,26 @@ class RequestHandlerManager extends \Thread
 
                     // make sure, that at least the minimum pool size of request handlers is available
                     if (($y = RequestHandlerManager::POOL_SIZE - $actualPoolSize) > 0) {
+                        $systemLogger->debug(
+                            sprintf(
+                                'Actual pool size %d is lower than requested pool size (%d)',
+                                $actualPoolSize,
+                                RequestHandlerManager::POOL_SIZE
+                            )
+                        );
                         $z += $y;
                     }
 
                     // if the pool size of worker is available, make sure, that at least the minimum
                     // number of spare request handlers are available
                     if (($x = RequestHandlerManager::MINIMUM_SPARE_HANDLERS - $waitingRequestHandlers) > 0) {
+                        $systemLogger->debug(
+                            sprintf(
+                                'Waiting spare handlers %d is lower than minium value (%d)',
+                                $waitingRequestHandlers,
+                                RequestHandlerManager::MINIMUM_SPARE_HANDLERS
+                            )
+                        );
                         $z += $x;
                     }
 
@@ -193,7 +204,7 @@ class RequestHandlerManager extends \Thread
                         $requestHandlers[$applicationName][$requestHandler->getThreadId()] = $requestHandler;
 
                         // log a debug message to the system log
-                        $systemLogger->notice(
+                        $systemLogger->debug(
                             sprintf(
                                 'Successfully started a new request handler %s for application %s',
                                 $applicationName,
@@ -203,7 +214,7 @@ class RequestHandlerManager extends \Thread
                     }
 
                     // log a debug message to the system log
-                    $systemLogger->notice(
+                    $systemLogger->debug(
                         sprintf(
                             'Pool size of request handlers for application %s is: %d',
                             $applicationName,

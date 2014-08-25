@@ -1,3 +1,13 @@
+# Version 0.7.6
+
+## Bugfixes
+
+* Bugfix invalid counter for waiting RequestHandler instances
+
+## Features
+
+* Add ttl with a default value of 10 seconds to RequestHandler
+
 # Version 0.7.5
 
 ## Bugfixes

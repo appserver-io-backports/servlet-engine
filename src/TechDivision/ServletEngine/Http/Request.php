@@ -27,7 +27,6 @@ use TechDivision\Http\HttpCookieInterface;
 use TechDivision\Http\HttpRequestInterface;
 use TechDivision\Servlet\SessionUtils;
 use TechDivision\Servlet\Http\HttpSession;
-use TechDivision\Servlet\Http\HttpSessionWrapper;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Servlet\Http\HttpServletResponse;
 use TechDivision\ServletEngine\SessionManager;
@@ -443,13 +442,18 @@ class Request implements HttpServletRequest
             $session = $manager->create($id, $sessionName);
         }
 
-        // if we can't find a session nor we've created one, so we return nothing!
-        if ($session == null) {
+        // if we can't find a session and we should NOT create one, return nothing
+        if ($create === false && $session == null) {
             return;
         }
 
+        // if we can't find a session although we SHOULD create one, we throw an exception
+        if ($create === true && $session == null) {
+            throw new \Exception('Can\'t create a new session!');
+        }
+
         // initialize the session wrapper
-        $wrapper = new HttpSessionWrapper();
+        $wrapper = new SessionWrapper();
         $wrapper->injectSession($session);
         $wrapper->injectRequest($this);
 

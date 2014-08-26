@@ -1,3 +1,13 @@
+# Version 0.7.7
+
+## Bugfixes
+
+* Make TTL for request handler random between 10 and 50 seconds
+
+## Features
+
+* Move HttpSessionWrapper implementation from TechDivision_ServletEngine to this library
+
 # Version 0.7.6
 
 ## Bugfixes

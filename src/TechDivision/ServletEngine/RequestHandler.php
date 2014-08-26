@@ -47,11 +47,18 @@ class RequestHandler extends \Thread
     const HANDLE_REQUESTS = 10;
 
     /**
-     * The number of seconds requests can be handled.
+     * The minimum number of seconds requests can be handled.
      *
      * @var integer
      */
-    const TIME_TO_LIVE = 10;
+    const TIME_TO_LIVE_MINIMUM = 10;
+
+    /**
+     * The maximum number of seconds requests can be handled.
+     *
+     * @var integer
+     */
+    const TIME_TO_LIVE_MAXIMUM = 50;
 
     /**
      * The application instance we're processing requests for.
@@ -146,13 +153,16 @@ class RequestHandler extends \Thread
         // initialize the time we've been started to handle requests
         $createdAt = time();
 
+        // initialize the TTL in seconds for this request handler
+        $ttl = rand(RequestHandler::TIME_TO_LIVE_MINIMUM, RequestHandler::TIME_TO_LIVE_MAXIMUM);
+
         do { // let's start handling requests
 
             // synchronize the response data
-            $this->synchronized(function ($self) {
+            $this->synchronized(function ($self, $timeToLive) {
 
                 // wait until we've to handle a new request
-                $self->wait(1000000 * RequestHandler::TIME_TO_LIVE);
+                $self->wait(1000000 * $timeToLive);
 
                 // check if we've to handle a request
                 if ($self->handleRequest) {
@@ -201,13 +211,13 @@ class RequestHandler extends \Thread
                     $servletResponse->setState(HttpResponseStates::DISPATCH);
                 }
 
-            }, $this);
+            }, $this, $ttl);
 
             // raise the number of handled requests
             $handledRequests++;
 
         // check if we've to handle anymore requests
-        } while ($handledRequests < RequestHandler::HANDLE_REQUESTS || $createdAt + RequestHandler::TIME_TO_LIVE > time());
+        } while ($handledRequests < RequestHandler::HANDLE_REQUESTS || $createdAt + $ttl > time());
     }
 
     /**

@@ -452,6 +452,7 @@ class Session extends GenericStackable implements ServletSession
         $secure = false;
         $httpOnly = false;
 
+        // initialize and return the empty instance
         return new Session($id, $name, $lifetime, $maximumAge, $domain, $path, $secure, $httpOnly);
     }
 

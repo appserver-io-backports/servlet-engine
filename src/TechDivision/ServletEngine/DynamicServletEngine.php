@@ -1,7 +1,7 @@
 <?php
 
 /**
- * TechDivision\ServletEngine\ServletEngine
+ * TechDivision\ServletEngine\DynamicServletEngine
  *
  * PHP version 5
  *
@@ -53,7 +53,7 @@ use TechDivision\Connection\ConnectionResponseInterface;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class ServletEngine extends GenericStackable implements ModuleInterface
+class DynamicServletEngine extends GenericStackable implements ModuleInterface
 {
 
     /**
@@ -114,6 +114,20 @@ class ServletEngine extends GenericStackable implements ModuleInterface
         $this->virtualHosts = new GenericStackable();
 
         /**
+         * Storage with the registered request handlers.
+         *
+         * @var \TechDivision\Storage\GenericStackable
+         */
+        $this->requestHandlers = new GenericStackable();
+
+        /**
+         * Storage with the thread ID's of the request handlers actually handling a request.
+         *
+         * @var \TechDivision\Storage\GenericStackable
+         */
+        $this->workingRequestHandlers = new GenericStackable();
+
+        /**
          * Storage with URL => application mappings.
          *
          * @var \TechDivision\Storage\GenericStackable
@@ -138,7 +152,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
      */
     public function getModuleName()
     {
-        return ServletEngine::MODULE_NAME;
+        return DynamicServletEngine::MODULE_NAME;
     }
 
     /**
@@ -162,6 +176,9 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             $this->initVirtualHosts();
             $this->initApplications();
             $this->initUrlMappings();
+
+            // initialize the request handler manager
+            $this->initRequestHandlerManager();
 
         } catch (\Exception $e) {
             throw new ModuleException($e);
@@ -260,6 +277,36 @@ class ServletEngine extends GenericStackable implements ModuleInterface
     }
 
     /**
+     * Initialize the request handler manager.
+     *
+     * @return void
+     */
+    public function initRequestHandlerManager()
+    {
+
+        // create a local copy of the valves
+        $valves = $this->valves;
+        $requestHandlers = $this->requestHandlers;
+        $applications = $this->applications;
+
+        // we also want to pass a system logger instance to the request handler manager
+        $systemLogger = $this->serverContext->getContainer()->getInitialContext()->getSystemLogger();
+
+        // we want to prepare an request for each application and each worker
+        foreach ($this->getApplications() as $applicationName => $application) {
+            $this->requestHandlers[$applicationName] = new GenericStackable();
+            for ($i = 0; $i < RequestHandlerManager::POOL_SIZE; $i++) {
+                $requestHandler = new RequestHandler($application, $valves);
+                $this->requestHandlers[$applicationName][$requestHandler->getThreadId()] = $requestHandler;
+            }
+        }
+
+
+        // initialize the request handler manager instance
+        $this->requestHandlerManager = new RequestHandlerManager($systemLogger, $requestHandlers, $applications, $valves);
+    }
+
+    /**
      * Prepares the module for upcoming request in specific context
      *
      * @return bool
@@ -300,6 +347,9 @@ class ServletEngine extends GenericStackable implements ModuleInterface
                 return;
             }
 
+            // notify the request handler to make sure we've at least one free request handler
+            $this->requestHandlerManager->notify();
+
             // intialize servlet session, request + response
             $servletRequest = new Request();
             $servletRequest->injectHttpRequest($request);
@@ -325,11 +375,32 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             // load a NOT working request handler from the pool
             $requestHandler = $this->requestHandlerFromPool($servletRequest);
 
-            // inject request/response and process the remote method call
-            $requestHandler->injectRequest($servletRequest);
-            $requestHandler->injectResponse($servletResponse);
-            $requestHandler->start();
-            $requestHandler->join();
+            // notify the application to handle the request
+            $requestHandler->synchronized(function ($self, $request, $response) {
+
+                // set the servlet/response intances
+                $self->servletRequest = $request;
+                $self->servletResponse = $response;
+
+                // set the flag to start request processing
+                $self->handleRequest = true;
+
+                // notify the request handler
+                $self->notify();
+
+            }, $requestHandler, $servletRequest, $servletResponse);
+
+            // wait until the response has been dispatched
+            while (true) {
+
+                // wait until request has been finished and response is dispatched
+                if (($requestHandler->isWaiting() || $requestHandler->shouldRestart()) && $servletResponse->hasState(HttpResponseStates::DISPATCH)) {
+                    break;
+                }
+
+                // try to reduce system load
+                usleep(1000);
+            }
 
             // re-attach the request handler to the pool
             $this->requestHandlerToPool($requestHandler);
@@ -389,13 +460,43 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             // try to match a registered application with the passed request
             if (preg_match($pattern, $url) === 1) {
 
-                // create a new request handler and return it
-                return new RequestHandler($this->applications[$applicationName], $this->valves);
+                // load the applications request handlers
+                $requestHandlers = $this->requestHandlers[$applicationName];
+
+                // reset the wait time
+                $waited = 0;
+
+                // we search for a request handler as long $handlerFound is empty
+                while ($waited < DynamicServletEngine::REQUEST_HANDLER_WAIT_TIMEOUT) {
+
+                    // search a NOT working request handler
+                    foreach ($requestHandlers as $requestHandler) {
+
+                        // if we've found a NOT working request handler, we stop
+                        if (!isset($this->workingRequestHandlers[$threadId = $requestHandler->getThreadId()]) && !$requestHandler->shouldRestart()) {
+
+                            // mark the request handler working and initialize the found one
+                            $this->workingRequestHandlers[$threadId] = true;
+
+                            // return the request handler instance
+                            return $requestHandler;
+                        }
+                    }
+
+                    // reduce CPU load
+                    usleep(100); // === 0.1 ms
+
+                    // raise wait time
+                    $waited += 100;
+                }
+
+                // throw an exception if we can't handle the request within the defined timeout
+                throw new RequestHandlerTimeoutException(sprintf('No request handler available to handle request for URI %s', $servletRequest->getUri()));
             }
         }
 
         // if not throw a bad request exception
-        throw new BadRequestException(sprintf('Can\'t find application for URL %s', $url));
+        throw new BadRequestException(sprintf('Can\'t find application for URI %s', $servletRequest->getUri()));
     }
 
     /**
@@ -408,7 +509,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
      */
     protected function requestHandlerToPool($requestHandler)
     {
-        // nothing to do here
+        unset($this->workingRequestHandlers[$requestHandler->getThreadId()]);
     }
 
     /**

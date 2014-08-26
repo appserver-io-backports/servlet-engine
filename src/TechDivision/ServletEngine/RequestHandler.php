@@ -21,9 +21,10 @@
 
 namespace TechDivision\ServletEngine;
 
-use \TechDivision\Http\HttpResponseStates;
-use TechDivision\Application\Interfaces\ApplicationInterface;
 use TechDivision\Server\Dictionaries\ServerVars;
+use TechDivision\Servlet\Http\HttpServletRequest;
+use TechDivision\Servlet\Http\HttpServletResponse;
+use TechDivision\Application\Interfaces\ApplicationInterface;
 
 /**
  * This is a request handler that is necessary to process each request of an
@@ -40,27 +41,6 @@ class RequestHandler extends \Thread
 {
 
     /**
-     * The number of request to be handled.
-     *
-     * @var integer
-     */
-    const HANDLE_REQUESTS = 10;
-
-    /**
-     * The minimum number of seconds requests can be handled.
-     *
-     * @var integer
-     */
-    const TIME_TO_LIVE_MINIMUM = 10;
-
-    /**
-     * The maximum number of seconds requests can be handled.
-     *
-     * @var integer
-     */
-    const TIME_TO_LIVE_MAXIMUM = 50;
-
-    /**
      * The application instance we're processing requests for.
      *
      * @return \TechDivision\ApplicationServer\Interfaces\ApplicationInterface
@@ -75,34 +55,6 @@ class RequestHandler extends \Thread
     protected $valves;
 
     /**
-     * The actual request instance we have to process.
-     *
-     * @return \TechDivision\Servlet\Http\HttpServletRequest
-     */
-    protected $servletRequest;
-
-    /**
-     * The actual response instance we have to process.
-     *
-     * @return \TechDivision\Servlet\Http\HttpServletResponse
-     */
-    protected $servletResponse;
-
-    /**
-     * Flag to allow/disallow request handling.
-     *
-     * @return boolean
-     */
-    protected $handleRequest;
-
-    /**
-     * Flag if request handler should be restarted by servlet engine
-     *
-     * @var boolean
-     */
-    protected $shouldRestart;
-
-    /**
      * Initializes the request handler with the application and the
      * valves to be processed
      *
@@ -111,16 +63,33 @@ class RequestHandler extends \Thread
      */
     public function __construct(ApplicationInterface $application, $valves)
     {
-
         // initialize the request handlers application
         $this->application = $application;
         $this->valves = $valves;
+    }
 
-        // we don't want to restart now
-        $this->handleRequest = false;
+    /**
+     * Inject the actual servlet request.
+     *
+     * @param \TechDivision\Serlvet\Http\HttpServletRequest $servletRequest The actual request instance
+     *
+     * @return void
+     */
+    public function injectRequest(HttpServletRequest $servletRequest)
+    {
+        $this->servletRequest = $servletRequest;
+    }
 
-        // autostart the handler
-        $this->start();
+    /**
+     * Inject the actual servlet response.
+     *
+     * @param \TechDivision\Serlvet\Http\HttpServletResponse $servletResponse The actual response instance
+     *
+     * @return void
+     */
+    public function injectResponse(HttpServletResponse $servletResponse)
+    {
+        $this->servletResponse = $servletResponse;
     }
 
     /**
@@ -141,93 +110,42 @@ class RequestHandler extends \Thread
     public function run()
     {
 
-        // register shutdown handler
-        register_shutdown_function(array(&$this, "shutdown"));
+        try {
 
-        // set should restart initial flag
-        $this->shouldRestart = false;
+            // reset request/response instance
+            $application = $this->application;
 
-        // start handling requests
-        $handledRequests = 0;
+            // register the class loader again, because each thread has its own context
+            $application->registerClassLoaders();
 
-        // initialize the time we've been started to handle requests
-        $createdAt = time();
+            // synchronize the servlet request/response
+            $servletRequest = $this->servletRequest;
+            $servletResponse = $this->servletResponse;
 
-        // initialize the TTL in seconds for this request handler
-        $ttl = rand(RequestHandler::TIME_TO_LIVE_MINIMUM, RequestHandler::TIME_TO_LIVE_MAXIMUM);
+            // prepare and set the applications context path
+            $servletRequest->setContextPath($contextPath = '/' . $application->getName());
 
-        do { // let's start handling requests
+            // prepare the path information depending if we're in a vhost or not
+            if ($application->isVhostOf($servletRequest->getServerVar(ServerVars::SERVER_NAME)) === false) {
+                $servletRequest->setServletPath(str_replace($contextPath, '', $servletRequest->getServletPath()));
+            }
 
-            // synchronize the response data
-            $this->synchronized(function ($self, $timeToLive) {
+            // inject the found application into the servlet request
+            $servletRequest->injectContext($application);
 
-                // wait until we've to handle a new request
-                $self->wait(1000000 * $timeToLive);
-
-                // check if we've to handle a request
-                if ($self->handleRequest) {
-
-                    try {
-
-                        // reset the flag
-                        $self->handleRequest = false;
-
-                        // reset request/response instance
-                        $application = $self->application;
-
-                        // register the class loader again, because each thread has its own context
-                        $application->registerClassLoaders();
-
-                        // synchronize the servlet request/response
-                        $servletRequest = $self->servletRequest;
-                        $servletResponse = $self->servletResponse;
-
-                        // prepare and set the applications context path
-                        $servletRequest->setContextPath($contextPath = '/' . $application->getName());
-
-                        // prepare the path information depending if we're in a vhost or not
-                        if ($application->isVhostOf($servletRequest->getServerVar(ServerVars::SERVER_NAME)) === false) {
-                            $servletRequest->setServletPath(str_replace($contextPath, '', $servletRequest->getServletPath()));
-                        }
-
-                        // inject the found application into the servlet request
-                        $servletRequest->injectContext($application);
-
-                        // process the valves
-                        foreach ($this->getValves() as $valve) {
-                            $valve->invoke($servletRequest, $servletResponse);
-                            if ($servletRequest->isDispatched() === true) {
-                                break;
-                            }
-                        }
-
-                    } catch (\Exception $e) {
-                        error_log($e->__toString());
-                        $servletResponse->appendBodyStream($e->__toString());
-                        $servletResponse->setStatusCode(500);
-                    }
-
-                    // set the request state to dispatched
-                    $servletResponse->setState(HttpResponseStates::DISPATCH);
+            // process the valves
+            foreach ($this->getValves() as $valve) {
+                $valve->invoke($servletRequest, $servletResponse);
+                if ($servletRequest->isDispatched() === true) {
+                    break;
                 }
+            }
 
-            }, $this, $ttl);
-
-            // raise the number of handled requests
-            $handledRequests++;
-
-        // check if we've to handle anymore requests
-        } while ($handledRequests < RequestHandler::HANDLE_REQUESTS || $createdAt + $ttl > time());
-    }
-
-    /**
-     * Returns TRUE if the request handler should be restarted by the servlet engine.
-     *
-     * @return boolean TRUE if the request handler should be restarted
-     */
-    public function shouldRestart()
-    {
-        return $this->shouldRestart;
+        } catch (\Exception $e) {
+            error_log($e->__toString());
+            $servletResponse->appendBodyStream($e->__toString());
+            $servletResponse->setStatusCode(500);
+        }
     }
 
     /**
@@ -244,8 +162,5 @@ class RequestHandler extends \Thread
         if ($lastError['type'] === E_ERROR || $lastError['type'] === E_USER_ERROR) {
             error_log($lastError['message']);
         }
-
-        // this request handler has to be restarted
-        $this->shouldRestart = true;
     }
 }

@@ -1,3 +1,13 @@
+# Version 0.7.8
+
+## Bugfixes
+
+* None
+
+## Features
+
+* Add static (no dynamic) request handler and servlet engine version
+
 # Version 0.7.7
 
 ## Bugfixes

@@ -1,3 +1,13 @@
+# Version 0.7.9
+
+## Bugfixes
+
+* None
+
+## Features
+
+* Add shutdown handler method to RequestHandler class
+
 # Version 0.7.8
 
 ## Bugfixes

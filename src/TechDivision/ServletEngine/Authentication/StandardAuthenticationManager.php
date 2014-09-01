@@ -27,6 +27,7 @@ use TechDivision\Servlet\ServletContext;
 use TechDivision\Servlet\ServletRequest;
 use TechDivision\Servlet\ServletResponse;
 use TechDivision\Application\Interfaces\ApplicationInterface;
+use TechDivision\Application\Interfaces\ManagerConfigurationInterface;
 
 /**
  * The authentication manager handles request which need Http authentication.
@@ -132,18 +133,19 @@ class StandardAuthenticationManager implements AuthenticationManager
     /**
      * Factory method that adds a initialized manager instance to the passed application.
      *
-     * @param \TechDivision\Application\Interfaces\ApplicationInterface $application The application instance
+     * @param \TechDivision\Application\Interfaces\ApplicationInterface               $application          The application instance
+     * @param \TechDivision\Application\Interfaces\ManagerConfigurationInterface|null $managerConfiguration The manager configuration
      *
      * @return void
      * @see \TechDivision\Application\Interfaces\ManagerInterface::get()
      */
-    public static function get(ApplicationInterface $application)
+    public static function visit(ApplicationInterface $application, ManagerConfigurationInterface $managerConfiguration = null)
     {
 
         // initialize the authentication manager
         $authenticationManager = new StandardAuthenticationManager();
 
-        // add the manager instance to the application
+        // add the initialized manager instance to the application
         $application->addManager($authenticationManager);
     }
 }

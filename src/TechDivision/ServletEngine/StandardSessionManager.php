@@ -30,6 +30,7 @@ use TechDivision\Storage\StorageInterface;
 use TechDivision\Storage\StackableStorage;
 use TechDivision\Storage\GenericStackable;
 use TechDivision\Application\Interfaces\ApplicationInterface;
+use TechDivision\Application\Interfaces\ManagerConfigurationInterface;
 
 /**
  * A standard session manager implementation that provides session
@@ -341,14 +342,15 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     }
 
     /**
-     * Factory method that adds a initialized manager instance to the passed application.
+     * Visitor method that adds a initialized manager instance to the passed application.
      *
-     * @param \TechDivision\Application\Interfaces\ApplicationInterface $application The application instance
+     * @param \TechDivision\Application\Interfaces\ApplicationInterface               $application          The application instance
+     * @param \TechDivision\Application\Interfaces\ManagerConfigurationInterface|null $managerConfiguration The manager configuration
      *
      * @return void
      * @see \TechDivision\Application\Interfaces\ManagerInterface::get()
      */
-    public static function get(ApplicationInterface $application)
+    public static function visit(ApplicationInterface $application, ManagerConfigurationInterface $managerConfiguration = null)
     {
 
         // initialize the session pool
@@ -388,7 +390,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
         $sessionManager->injectPersistenceManager($persistenceManager);
         $sessionManager->injectGarbageCollector($garbageCollector);
 
-        // add the manager instance to the application
+        // add the initialized manager instance to the application
         $application->addManager($sessionManager);
     }
 }

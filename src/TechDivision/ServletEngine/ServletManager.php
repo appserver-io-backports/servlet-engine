@@ -28,6 +28,7 @@ use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\ServletEngine\ServletConfiguration;
 use TechDivision\ServletEngine\InvalidServletMappingException;
 use TechDivision\Application\Interfaces\ApplicationInterface;
+use TechDivision\Application\Interfaces\ManagerConfigurationInterface;
 
 /**
  * The servlet manager handles the servlets registered for the application.
@@ -429,12 +430,13 @@ class ServletManager extends \Stackable implements ServletContext
     /**
      * Factory method that adds a initialized manager instance to the passed application.
      *
-     * @param \TechDivision\Application\Interfaces\ApplicationInterface $application The application instance
+     * @param \TechDivision\Application\Interfaces\ApplicationInterface               $application          The application instance
+     * @param \TechDivision\Application\Interfaces\ManagerConfigurationInterface|null $managerConfiguration The manager configuration
      *
      * @return void
      * @see \TechDivision\Application\Interfaces\ManagerInterface::get()
      */
-    public static function get(ApplicationInterface $application)
+    public static function visit(ApplicationInterface $application, ManagerConfigurationInterface $managerConfiguration = null)
     {
 
         // initialize the servlet locator
@@ -445,7 +447,7 @@ class ServletManager extends \Stackable implements ServletContext
         $servletManager->injectWebappPath($application->getWebappPath());
         $servletManager->injectResourceLocator($servletLocator);
 
-        // add the manager instance to the application
+        // add the initialized manager instance to the application
         $application->addManager($servletManager);
     }
 }

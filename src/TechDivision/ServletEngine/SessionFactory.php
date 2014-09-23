@@ -98,7 +98,9 @@ class SessionFactory extends \Thread
         if ($this->nextSessionCounter > (SessionFactory::SESSION_POOL_SIZE - 1)) {
 
             // notify the factory to create a new session instances
-            $this->notify();
+            $this->synchronized(function ($self) {
+                $self->notify();
+            }, $this);
 
             // reset the next session counter
             $this->nextSessionCounter = 0;
@@ -120,8 +122,10 @@ class SessionFactory extends \Thread
 
         // while we should create threads, to it
         while ($this->run) {
-            $this->wait();
-            $this->refill();
+            $this->synchronized(function ($self) {
+                $self->wait();
+                $self->refill();
+            }, $this);
         }
     }
 

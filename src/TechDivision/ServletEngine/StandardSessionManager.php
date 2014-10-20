@@ -362,7 +362,6 @@ class StandardSessionManager extends GenericStackable implements SessionManager
 
         // we need a session factory instance
         $sessionFactory = new SessionFactory($sessionPool);
-        $sessionFactory->start();
 
         // we need a persistence manager and garbage collector
         $persistenceManager = new FilesystemPersistenceManager();
@@ -389,6 +388,9 @@ class StandardSessionManager extends GenericStackable implements SessionManager
         $sessionManager->injectSessionFactory($sessionFactory);
         $sessionManager->injectPersistenceManager($persistenceManager);
         $sessionManager->injectGarbageCollector($garbageCollector);
+
+        // start the session factory
+        $sessionFactory->start();
 
         // add the initialized manager instance to the application
         $application->addManager($sessionManager);

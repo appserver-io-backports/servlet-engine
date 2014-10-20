@@ -29,6 +29,7 @@ use TechDivision\ServletEngine\ServletConfiguration;
 use TechDivision\ServletEngine\InvalidServletMappingException;
 use TechDivision\Application\Interfaces\ApplicationInterface;
 use TechDivision\Application\Interfaces\ManagerConfigurationInterface;
+use TechDivision\Storage\StorageInterface;
 
 /**
  * The servlet manager handles the servlets registered for the application.
@@ -50,17 +51,7 @@ class ServletManager extends \Stackable implements ServletContext
      */
     public function __construct()
     {
-
-        // initialize the member variables
         $this->webappPath = '';
-        $this->resourceLocator = null;
-
-        // initialize the stackabls
-        $this->servlets = new StackableStorage();
-        $this->servletMappings = new StackableStorage();
-        $this->initParameters = new StackableStorage();
-        $this->securedUrlConfigs = new StackableStorage();
-        $this->sessionParameters = new StackableStorage();
     }
 
     /**
@@ -85,6 +76,66 @@ class ServletManager extends \Stackable implements ServletContext
     public function injectResourceLocator(ResourceLocator $resourceLocator)
     {
         $this->resourceLocator = $resourceLocator;
+    }
+
+    /**
+     * Injects the container for the servlets.
+     *
+     * @param \TechDivision\Storage\StorageInterface $servlets The container for the servlets
+     *
+     * @return void
+     */
+    public function injectServlets(StorageInterface $servlets)
+    {
+        $this->servlets = $servlets;
+    }
+
+    /**
+     * Injects the container for the servlet mappings.
+     *
+     * @param \TechDivision\Storage\StorageInterface $servletMappings The container for the servlet mappings
+     *
+     * @return void
+     */
+    public function injectServletMappings(StorageInterface $servletMappings)
+    {
+        $this->servletMappings = $servletMappings;
+    }
+
+    /**
+     * Injects the container for the init parameters.
+     *
+     * @param \TechDivision\Storage\StorageInterface $initParameters The container for the init parameters
+     *
+     * @return void
+     */
+    public function injectInitParameters(StorageInterface $initParameters)
+    {
+        $this->initParameters = $initParameters;
+    }
+
+    /**
+     * Injects the container for the secured URL configurations.
+     *
+     * @param \TechDivision\Storage\StorageInterface $securedUrlConfigs The container for the secured URL configurations
+     *
+     * @return void
+     */
+    public function injectSecuredUrlConfigs(StorageInterface $securedUrlConfigs)
+    {
+        $this->securedUrlConfigs = $securedUrlConfigs;
+    }
+
+    /**
+     * Injects the container for the session parameters.
+     *
+     * @param \TechDivision\Storage\StorageInterface $sessionParameters The container for the session parameters
+     *
+     * @return void
+     */
+    public function injectSessionParameters(StorageInterface $sessionParameters)
+    {
+        $this->sessionParameters = $sessionParameters;
     }
 
     /**
@@ -201,18 +252,6 @@ class ServletManager extends \Stackable implements ServletContext
                 $this->servletMappings[$urlPattern] = $servletName;
             }
         }
-    }
-
-    /**
-     * Sets all servlets as array
-     *
-     * @param array $servlets The servlets collection
-     *
-     * @return void
-     */
-    public function setServlets($servlets)
-    {
-        $this->servlets = $servlets;
     }
 
     /**
@@ -439,11 +478,23 @@ class ServletManager extends \Stackable implements ServletContext
     public static function visit(ApplicationInterface $application, ManagerConfigurationInterface $managerConfiguration = null)
     {
 
+        // initialize the stackabls
+        $servlets = new StackableStorage();
+        $servletMappings = new StackableStorage();
+        $initParameters = new StackableStorage();
+        $securedUrlConfigs = new StackableStorage();
+        $sessionParameters = new StackableStorage();
+
         // initialize the servlet locator
         $servletLocator = new ServletLocator();
 
         // initialize the servlet manager
         $servletManager = new ServletManager();
+        $servletManager->injectServlets($servlets);
+        $servletManager->injectServletMappings($servletMappings);
+        $servletManager->injectInitParameters($initParameters);
+        $servletManager->injectSecuredUrlConfigs($securedUrlConfigs);
+        $servletManager->injectSessionParameters($sessionParameters);
         $servletManager->injectWebappPath($application->getWebappPath());
         $servletManager->injectResourceLocator($servletLocator);
 

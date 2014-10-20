@@ -1,3 +1,13 @@
+# Version 0.7.12
+
+## Bugfixes
+
+* Inject all Stackable instances instead of initialize them in ServletManager::__construct + StandardSessionManager::__construct => pthreads 2.x compatibility
+
+## Features
+
+* None
+
 # Version 0.7.11
 
 ## Bugfixes

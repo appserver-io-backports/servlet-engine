@@ -129,7 +129,7 @@ class ServletManager extends \Stackable implements ServletContext
     /**
      * Injects the container for the session parameters.
      *
-     * @param \TechDivision\Storage\StorageInterface $securedUrlConfigs The container for the session parameters
+     * @param \TechDivision\Storage\StorageInterface $sessionParameters The container for the session parameters
      *
      * @return void
      */

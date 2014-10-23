@@ -3,29 +3,29 @@
 	"description" : "Servlet engine default implementation.",
 	"homepage" : "https://github.com/techdivision/TechDivision_ServletEngine",
 	"license" : "OSL-3.0",
-    "keywords" : [
-        "php",
-        "server",
-        "webt",
-        "engine",
-        "servlet"
-    ],
-    "authors" : [{
-            "name" : "Tim Wagner",
-            "email" : "tw@techdivision.com",
-            "homepage" : "http://www.techdivision.com",
-            "role" : "Developer"
-        }
-    ],
+	"keywords" : [
+		"php",
+		"server",
+		"webt",
+		"engine",
+		"servlet"
+	],
+	"authors" : [{
+			"name" : "Tim Wagner",
+			"email" : "tw@techdivision.com",
+			"homepage" : "http://www.techdivision.com",
+			"role" : "Developer"
+		}
+	],
 	"require" : {
 		"php" : ">=5.4.0",
 		"techdivision/http" : "0.1.*",
 		"techdivision/server" : "0.1.*",
 		"techdivision/servlet" : "0.6.*",
 		"techdivision/storage" : "0.5.*",
-		"techdivision/appserver" : ">=0.8",
+		"techdivision/appserver" : "0.10.*",
 		"techdivision/connection" : "0.1.*",
-		"techdivision/application" : "0.2.*"
+		"techdivision/application" : "0.3.*"
 	},
 	"require-dev" : {
 		"phpunit/phpunit" : "3.7.*",
@@ -44,9 +44,9 @@
 			"github.com" : "604a3b5943228e434a5b52c2ba3cf72286d30db9"
 		}
 	},
-    "support" : {
-        "email" : "t.wagner@techdivision.com",
-        "issues" : "https://github.com/techdivision/TechDivision_ServletEngine/issues",
-        "source" : "https://github.com/techdivision/TechDivision_ServletEngine"
-    }
+	"support" : {
+		"email" : "t.wagner@techdivision.com",
+		"issues" : "https://github.com/techdivision/TechDivision_ServletEngine/issues",
+		"source" : "https://github.com/techdivision/TechDivision_ServletEngine"
+	}
 }

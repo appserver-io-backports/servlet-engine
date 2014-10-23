@@ -30,7 +30,6 @@ use TechDivision\Storage\StorageInterface;
 use TechDivision\Storage\StackableStorage;
 use TechDivision\Storage\GenericStackable;
 use TechDivision\Application\Interfaces\ApplicationInterface;
-use TechDivision\Application\Interfaces\ManagerConfigurationInterface;
 
 /**
  * A standard session manager implementation that provides session
@@ -339,60 +338,5 @@ class StandardSessionManager extends GenericStackable implements SessionManager
     public function getAttribute($key)
     {
         throw new \Exception(sprintf('%s is not implemented yes', __METHOD__));
-    }
-
-    /**
-     * Visitor method that adds a initialized manager instance to the passed application.
-     *
-     * @param \TechDivision\Application\Interfaces\ApplicationInterface               $application          The application instance
-     * @param \TechDivision\Application\Interfaces\ManagerConfigurationInterface|null $managerConfiguration The manager configuration
-     *
-     * @return void
-     * @see \TechDivision\Application\Interfaces\ManagerInterface::get()
-     */
-    public static function visit(ApplicationInterface $application, ManagerConfigurationInterface $managerConfiguration = null)
-    {
-
-        // initialize the session pool
-        $sessions = new StackableStorage();
-        $checksums = new StackableStorage();
-        $sessionPool = new StackableStorage();
-        $sessionSettings = new DefaultSessionSettings();
-        $sessionMarshaller = new StandardSessionMarshaller();
-
-        // we need a session factory instance
-        $sessionFactory = new SessionFactory($sessionPool);
-
-        // we need a persistence manager and garbage collector
-        $persistenceManager = new FilesystemPersistenceManager();
-        $persistenceManager->injectSessions($sessions);
-        $persistenceManager->injectChecksums($checksums);
-        $persistenceManager->injectSessionSettings($sessionSettings);
-        $persistenceManager->injectSessionMarshaller($sessionMarshaller);
-        $persistenceManager->injectSessionFactory($sessionFactory);
-        $persistenceManager->injectUser($application->getUser());
-        $persistenceManager->injectGroup($application->getGroup());
-        $persistenceManager->injectUmask($application->getUmask());
-        $persistenceManager->start();
-
-        // we need a garbage collector
-        $garbageCollector = new StandardGarbageCollector();
-        $garbageCollector->injectSessions($sessions);
-        $garbageCollector->injectSessionSettings($sessionSettings);
-        $garbageCollector->start();
-
-        // and finally we need the session manager instance
-        $sessionManager = new StandardSessionManager();
-        $sessionManager->injectSessions($sessions);
-        $sessionManager->injectSessionSettings($sessionSettings);
-        $sessionManager->injectSessionFactory($sessionFactory);
-        $sessionManager->injectPersistenceManager($persistenceManager);
-        $sessionManager->injectGarbageCollector($garbageCollector);
-
-        // start the session factory
-        $sessionFactory->start();
-
-        // add the initialized manager instance to the application
-        $application->addManager($sessionManager);
     }
 }

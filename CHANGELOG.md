@@ -1,3 +1,15 @@
+# Version 0.8.1
+
+## Bugfixes
+
+* None
+
+## Features
+
+* Add dependency to new appserver-io/logger library
+* Integration of monitoring/profiling functionality
+* Revert integration to initialize manager instances with thread based factories
+
 # Version 0.8.0
 
 ## Bugfixes

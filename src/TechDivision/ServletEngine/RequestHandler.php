@@ -21,6 +21,8 @@
 
 namespace TechDivision\ServletEngine;
 
+use AppserverIo\Logger\LoggerUtils;
+use TechDivision\Storage\GenericStackable;
 use TechDivision\Server\Dictionaries\ServerVars;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\Servlet\Http\HttpServletResponse;
@@ -41,31 +43,27 @@ class RequestHandler extends \Thread
 {
 
     /**
-     * The application instance we're processing requests for.
+     * Injects the valves to be processed.
      *
-     * @return \TechDivision\ApplicationServer\Interfaces\ApplicationInterface
+     * @param \TechDivision\Storage\GenericStackable $valves The valves to process
+     *
+     * @return void
      */
-    protected $application;
+    public function injectValves(GenericStackable $valves)
+    {
+        $this->valves = $valves;
+    }
 
     /**
-     * The valves we're processing each request with.
-     *
-     * @return \TechDivision\Storage\GenericStackable
-     */
-    protected $valves;
-
-    /**
-     * Initializes the request handler with the application and the
-     * valves to be processed
+     * Injects the application of the request to be handled
      *
      * @param \TechDivision\ApplicationServer\Interfaces\ApplicationInterface $application The application instance
-     * @param \TechDivision\Storage\GenericStackable                          $valves      The valves to process
+     *
+     * @return void
      */
-    public function __construct(ApplicationInterface $application, $valves)
+    public function injectApplication(ApplicationInterface $application)
     {
-        // initialize the request handlers application
         $this->application = $application;
-        $this->valves = $valves;
     }
 
     /**
@@ -93,16 +91,6 @@ class RequestHandler extends \Thread
     }
 
     /**
-     * Returns the valves we're processing each request with.
-     *
-     * @return \TechDivision\Storage\GenericStackable The valves
-     */
-    protected function getValves()
-    {
-        return $this->valves;
-    }
-
-    /**
      * The main method that handles the thread in a separate context.
      *
      * @return void
@@ -118,10 +106,11 @@ class RequestHandler extends \Thread
             // reset request/response instance
             $application = $this->application;
 
-            // register the class loader again, because each thread has its own context
+            // register class loaders
             $application->registerClassLoaders();
 
-            // synchronize the servlet request/response
+            // synchronize the valves, servlet request/response
+            $valves = $this->valves;
             $servletRequest = $this->servletRequest;
             $servletResponse = $this->servletResponse;
 
@@ -137,11 +126,17 @@ class RequestHandler extends \Thread
             $servletRequest->injectContext($application);
 
             // process the valves
-            foreach ($this->getValves() as $valve) {
+            foreach ($valves as $valve) {
                 $valve->invoke($servletRequest, $servletResponse);
                 if ($servletRequest->isDispatched() === true) {
                     break;
                 }
+            }
+
+            // profile the request if the profile logger is available
+            if ($profileLogger = $application->getInitialContext()->getLogger(LoggerUtils::PROFILE)) {
+                $profileLogger->appendThreadContext('request-handler');
+                $profileLogger->info($servletRequest->getUri());
             }
 
         } catch (\Exception $e) {

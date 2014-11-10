@@ -172,7 +172,7 @@ class StandardSessionManager extends GenericStackable implements SessionManager
      */
     public function getSessionPool()
     {
-        return $this->sessionPool;
+        // do nothing here
     }
 
     /**

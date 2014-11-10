@@ -20,8 +20,12 @@
  */
 namespace TechDivision\ServletEngine;
 
-use \TechDivision\Storage\StorageInterface;
-use \TechDivision\ServletEngine\Http\Session;
+use AppserverIo\Logger\LoggerUtils;
+use TechDivision\Storage\StorageInterface;
+use TechDivision\ServletEngine\Http\Session;
+use TechDivision\Storage\GenericStackable;
+use TechDivision\Servlet\ServletSession;
+use TechDivision\Servlet\Http\HttpSession;
 
 /**
  * A thread thats preinitialized session instances and adds them to the
@@ -38,52 +42,79 @@ class SessionFactory extends \Thread
 {
 
     /**
-     * The size of the sesion pool
+     * The time we wait after each loop.
      *
      * @var integer
      */
-    const SESSION_POOL_SIZE = 10;
+    const TIME_TO_LIVE = 1;
 
     /**
-     * Initializes the internal session counter.
+     * Key for invokation of method 'removeBySessionId()'.
      *
-     * @var integer
+     * @var string
      */
-    protected $nextSessionCounter;
+    const ACTION_REMOVE_BY_SESSION_ID = 1;
 
     /**
-     * The session manager instance we're creating sessions for.
+     * Key for invokation of method 'nextFromPool()'.
      *
-     * @var \TechDivision\ServletEngine\SessionManager
+     * @var string
      */
-    protected $sessionPool;
+    const ACTION_NEXT_FROM_POOL = 2;
 
     /**
      * Initializes the session factory instance.
      *
-     * @param \TechDivision\Storage\StorageInterface $sessionPool The session pool
+     * @param \TechDivision\Storage\GenericStackable $sessionPool The session pool
      */
-    public function __construct(StorageInterface $sessionPool)
+    public function __construct($sessionPool)
     {
+
         // initialize the members
         $this->run = true;
-        $this->nextSessionCounter = 0;
+        $this->sessionAvailable = false;
+
+        $this->uniqueId = null;
+        $this->action = null;
 
         // set the session pool storage
         $this->sessionPool = $sessionPool;
-
-        // initialize the session pool
-        $this->refill();
     }
 
     /**
-     * Returns the session pool instance.
+     * Injects the available logger instances.
      *
-     * @return \TechDivision\Storage\StorageInterface The session pool
+     * @param array $loggers The logger instances
+     *
+     * @return void
+     */
+    public function injectLoggers(array $loggers)
+    {
+        $this->loggers = $loggers;
+    }
+
+    /**
+     * Stops the session factory.
+     *
+     * @return void
+     */
+    public function stop()
+    {
+        $this->synchronized(function ($self) {
+            $self->run = false;
+        }, $this);
+    }
+
+    /**
+     * public function return the session pool.
+     *
+     * @return \TechDivision\Storage\StackableStorage The session pool instance
      */
     public function getSessionPool()
     {
-        return $this->sessionPool;
+        return $this->synchronized(function ($self) {
+            return $self->sessionPool;
+        }, $this);
     }
 
     /**
@@ -91,24 +122,47 @@ class SessionFactory extends \Thread
      *
      * @return \TechDivision\Session\ServletSession The session instance
      */
-    protected function nextFromPool()
+    public function nextFromPool()
     {
+        return $this->synchronized(function ($self) {
 
-        // check the session counter
-        if ($this->nextSessionCounter > (SessionFactory::SESSION_POOL_SIZE - 1)) {
+            // set the action and the flag we want to wait for
+            $self->action = SessionFactory::ACTION_NEXT_FROM_POOL;
+            $self->sessionAvailable = false;
 
-            // notify the factory to create a new session instances
-            $this->synchronized(function ($self) {
-                $self->notify();
-            }, $this);
+            // send the notification that we're ready
+            $self->notify();
 
-            // reset the next session counter
-            $this->nextSessionCounter = 0;
-        }
+            // wait for notification
+            if ($self->sessionAvailable === false) {
+                $self->wait();
+            }
 
+            // return the new session instance
+            return $self->sessionPool->get($self->uniqueId);
 
-        // return the next session instance from the pool
-        return $this->getSessionPool()->get($this->nextSessionCounter++);
+        }, $this);
+    }
+
+    /**
+     * Removes the session with the passed ID from the session pool.
+     *
+     * @param string $sessionId ID of the session we want to remove
+     *
+     * @return void
+     */
+    public function removeBySessionId($sessionId)
+    {
+        $this->synchronized(function ($self, $id) {
+
+            // set the action and the session-ID
+            $self->action = SessionFactory::ACTION_REMOVE_BY_SESSION_ID;
+            $self->sessionId = $id;
+
+            // send a notification
+            $self->notify();
+
+        }, $this, $sessionId);
     }
 
     /**
@@ -120,34 +174,59 @@ class SessionFactory extends \Thread
     public function run()
     {
 
+        // setup autoloader
+        require SERVER_AUTOLOADER;
+
+        // try to load the profile logger
+        if (isset($this->loggers[LoggerUtils::PROFILE])) {
+            $profileLogger = $this->loggers[LoggerUtils::PROFILE];
+            $profileLogger->appendThreadContext('session-factory');
+        }
+
         // while we should create threads, to it
         while ($this->run) {
+
             $this->synchronized(function ($self) {
-                $self->wait();
-                $self->refill();
+
+                // wait until we receive a notification for a method invokation
+                $self->wait(1000000 * SessionFactory::TIME_TO_LIVE);
+
+                switch ($self->action) { // check the method we want to invoke
+
+                    case SessionFactory::ACTION_NEXT_FROM_POOL: // we want to create a new session instance
+
+                        $self->uniqueId = uniqid();
+                        $self->sessionPool->set($self->uniqueId, Session::emptyInstance());
+                        $self->sessionAvailable = true;
+
+                        // send a notification that method invokation has been processed
+                        $self->notify();
+
+                        break;
+
+                    case SessionFactory::ACTION_REMOVE_BY_SESSION_ID: // we want to remove a session instance from the pool
+
+                        foreach ($self->sessionPool as $uniqueId => $session) {
+                            if ($session instanceof ServletSession && $session->getId() === $self->sessionId) {
+                                $self->sessionPool->remove($uniqueId);
+                            }
+                        }
+
+                        break;
+
+                    default: // do nothing, because we've an unknown action
+
+                        break;
+                }
+
+                // reset the action
+                $self->action = null;
+
             }, $this);
-        }
-    }
 
-    /**
-     * Refills the session pool.
-     *
-     * @return void
-     */
-    protected function refill()
-    {
-        for ($i = 0; $i < SessionFactory::SESSION_POOL_SIZE; $i++) {
-            $this->getSessionPool()->set($i, Session::emptyInstance());
+            if ($profileLogger) { // profile the size of the session pool
+                $profileLogger->debug(sprintf('Size of session pool is: %d', sizeof($this->sessionPool)));
+            }
         }
-    }
-
-    /**
-     * Stops the session factory.
-     *
-     * @return void
-     */
-    public function stop()
-    {
-        $this->run = false;
     }
 }

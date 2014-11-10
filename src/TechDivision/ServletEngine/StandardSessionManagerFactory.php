@@ -22,7 +22,8 @@
 namespace TechDivision\ServletEngine;
 
 use TechDivision\Storage\StackableStorage;
-use TechDivision\ApplicationServer\AbstractManagerFactory;
+use TechDivision\Application\Interfaces\ApplicationInterface;
+use TechDivision\Application\Interfaces\ManagerConfigurationInterface;
 
 /**
  * A factory for the standard session manager instances.
@@ -34,75 +35,65 @@ use TechDivision\ApplicationServer\AbstractManagerFactory;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class StandardSessionManagerFactory extends AbstractManagerFactory
+class StandardSessionManagerFactory
 {
 
     /**
      * The main method that creates new instances in a separate context.
      *
+     * @param \TechDivision\Application\Interfaces\ApplicationInterface          $application          The application instance to register the class loader with
+     * @param \TechDivision\Application\Interfaces\ManagerConfigurationInterface $managerConfiguration The manager configuration
+     *
      * @return void
      */
-    public function run()
+    public static function visit(ApplicationInterface $application, ManagerConfigurationInterface $managerConfiguration)
     {
 
-        while (true) { // we never stop
+        // load the registered loggers
+        $loggers = $application->getInitialContext()->getLoggers();
 
-            $this->synchronized(function ($self) {
+        // initialize the session pool
+        $sessions = new StackableStorage();
+        $checksums = new StackableStorage();
+        $sessionPool = new StackableStorage();
+        $sessionSettings = new DefaultSessionSettings();
+        $sessionMarshaller = new StandardSessionMarshaller();
 
-                // make instances local available
-                $instances = $self->instances;
-                $application = $self->application;
-                $initialContext = $self->initialContext;
+        // we need a session factory instance
+        $sessionFactory = new SessionFactory($sessionPool);
+        $sessionFactory->injectLoggers($loggers);
+        $sessionFactory->start();
 
-                // register the default class loader
-                $initialContext->getClassLoader()->register(true, true);
+        // we need a persistence manager and garbage collector
+        $persistenceManager = new FilesystemPersistenceManager();
+        $persistenceManager->injectLoggers($loggers);
+        $persistenceManager->injectSessions($sessions);
+        $persistenceManager->injectChecksums($checksums);
+        $persistenceManager->injectSessionSettings($sessionSettings);
+        $persistenceManager->injectSessionMarshaller($sessionMarshaller);
+        $persistenceManager->injectSessionFactory($sessionFactory);
+        $persistenceManager->injectUser($application->getUser());
+        $persistenceManager->injectGroup($application->getGroup());
+        $persistenceManager->injectUmask($application->getUmask());
+        $persistenceManager->start();
 
-                // initialize the session pool
-                $sessions = new StackableStorage();
-                $checksums = new StackableStorage();
-                $sessionPool = new StackableStorage();
-                $sessionSettings = new DefaultSessionSettings();
-                $sessionMarshaller = new StandardSessionMarshaller();
+        // we need a garbage collector
+        $garbageCollector = new StandardGarbageCollector();
+        $garbageCollector->injectLoggers($loggers);
+        $garbageCollector->injectSessions($sessions);
+        $garbageCollector->injectSessionFactory($sessionFactory);
+        $garbageCollector->injectSessionSettings($sessionSettings);
+        $garbageCollector->start();
 
-                // we need a session factory instance
-                $sessionFactory = new SessionFactory($sessionPool);
+        // and finally we need the session manager instance
+        $sessionManager = new StandardSessionManager();
+        $sessionManager->injectSessions($sessions);
+        $sessionManager->injectSessionSettings($sessionSettings);
+        $sessionManager->injectSessionFactory($sessionFactory);
+        $sessionManager->injectPersistenceManager($persistenceManager);
+        $sessionManager->injectGarbageCollector($garbageCollector);
 
-                // we need a persistence manager and garbage collector
-                $persistenceManager = new FilesystemPersistenceManager();
-                $persistenceManager->injectSessions($sessions);
-                $persistenceManager->injectChecksums($checksums);
-                $persistenceManager->injectSessionSettings($sessionSettings);
-                $persistenceManager->injectSessionMarshaller($sessionMarshaller);
-                $persistenceManager->injectSessionFactory($sessionFactory);
-                $persistenceManager->injectUser($application->getUser());
-                $persistenceManager->injectGroup($application->getGroup());
-                $persistenceManager->injectUmask($application->getUmask());
-                $persistenceManager->start();
-
-                // we need a garbage collector
-                $garbageCollector = new StandardGarbageCollector();
-                $garbageCollector->injectSessions($sessions);
-                $garbageCollector->injectSessionSettings($sessionSettings);
-                $garbageCollector->start();
-
-                // and finally we need the session manager instance
-                $sessionManager = new StandardSessionManager();
-                $sessionManager->injectSessions($sessions);
-                $sessionManager->injectSessionSettings($sessionSettings);
-                $sessionManager->injectSessionFactory($sessionFactory);
-                $sessionManager->injectPersistenceManager($persistenceManager);
-                $sessionManager->injectGarbageCollector($garbageCollector);
-
-                // start the session factory
-                $sessionFactory->start();
-
-                // attach the instance
-                $instances[] = $sessionManager;
-
-                // wait for the next instance to be created
-                $self->wait();
-
-            }, $this);
-        }
+        // attach the instance
+        $application->addManager($sessionManager);
     }
 }

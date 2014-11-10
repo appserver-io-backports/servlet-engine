@@ -23,6 +23,7 @@
 namespace TechDivision\ServletEngine\Http;
 
 use TechDivision\Context\Context;
+use TechDivision\Storage\GenericStackable;
 use TechDivision\Http\HttpCookieInterface;
 use TechDivision\Http\HttpRequestInterface;
 use TechDivision\Servlet\SessionUtils;
@@ -44,85 +45,49 @@ use TechDivision\Application\Interfaces\ApplicationInterface;
  * @license    http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link       http://www.appserver.io
  */
-class Request implements HttpServletRequest
+class Request extends GenericStackable implements HttpServletRequest
 {
 
     /**
-     * The body stream, a string because we can't serialize memory stream here.
+     * Initialize the servlet response.
      *
-     * @var string
+     * @return void
      */
-    protected $bodyStream;
+    public function __construct()
+    {
+        $this->init();
+    }
 
     /**
-     * The ID of requested session.
+     * Initialises the response object to default properties
      *
-     * @var string
+     * @return void
      */
-    protected $requestedSessionId;
+    public function init()
+    {
 
-    /**
-     * The name of requested session.
-     *
-     * @var string
-     */
-    protected $requestedSessionName;
+        // init body stream
+        $this->bodyStream = '';
 
-    /**
-     * Path info.
-     *
-     * @var string
-     */
-    protected $pathInfo;
+        // the request has not been dispatched initially
+        $this->dispatched = false;
 
-    /**
-     * The path to the servlet used to handle the request.
-     *
-     * @var string
-     */
-    protected $servletPath;
+        // initialize the instances
+        $this->context = null;
+        $this->response = null;
+        $this->httpRequest = null;
+        $this->requestHandler = null;
 
-    /**
-     * The Http request instance.
-     *
-     * @var \TechDivision\Http\HttpRequestInteface
-     */
-    protected $httpRequest;
+        // initialize the strings
+        $this->servletPath = '';
+        $this->pathInfo = '';
+        $this->requestedSessionId = '';
+        $this->requestedSessionName = '';
 
-    /**
-     * The response instance bound to this request.
-     *
-     * @var \TechDivision\Servlet\Http\HttpServletResponse
-     */
-    protected $response;
-
-    /**
-     * The server variables.
-     *
-     * @var array
-     */
-    protected $serverVars = array();
-
-    /**
-     * Flag that the request has been dispatched.
-     *
-     * @var boolean
-     */
-    protected $dispatched = false;
-
-    /**
-     * The request context that handles the request.
-     *
-     * @var \TechDivision\Context\Context
-     */
-    protected $context;
-
-    /**
-     * The array with the file parts.
-     *
-     * @var array
-     */
-    protected $parts = array();
+        // initialize the server variables and the parts
+        $this->serverVars = new GenericStackable();
+        $this->parts = new GenericStackable();
+    }
 
     /**
      * Injects the context that allows access to session and

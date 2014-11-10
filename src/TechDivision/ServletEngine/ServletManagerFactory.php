@@ -22,7 +22,8 @@
 namespace TechDivision\ServletEngine;
 
 use TechDivision\Storage\StackableStorage;
-use TechDivision\ApplicationServer\AbstractManagerFactory;
+use TechDivision\Application\Interfaces\ApplicationInterface;
+use TechDivision\Application\Interfaces\ManagerConfigurationInterface;
 
 /**
  * The servlet manager handles the servlets registered for the application.
@@ -34,56 +35,41 @@ use TechDivision\ApplicationServer\AbstractManagerFactory;
  * @license   http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link      http://www.appserver.io
  */
-class ServletManagerFactory extends AbstractManagerFactory
+class ServletManagerFactory
 {
 
     /**
      * The main method that creates new instances in a separate context.
      *
+     * @param \TechDivision\Application\Interfaces\ApplicationInterface          $application          The application instance to register the class loader with
+     * @param \TechDivision\Application\Interfaces\ManagerConfigurationInterface $managerConfiguration The manager configuration
+     *
      * @return void
      */
-    public function run()
+    public static function visit(ApplicationInterface $application, ManagerConfigurationInterface $managerConfiguration)
     {
 
-        while (true) { // we never stop
+        // initialize the stackabls
+        $servlets = new StackableStorage();
+        $servletMappings = new StackableStorage();
+        $initParameters = new StackableStorage();
+        $securedUrlConfigs = new StackableStorage();
+        $sessionParameters = new StackableStorage();
 
-            $this->synchronized(function ($self) {
+        // initialize the servlet locator
+        $servletLocator = new ServletLocator();
 
-                // make instances local available
-                $instances = $self->instances;
-                $application = $self->application;
-                $initialContext = $self->initialContext;
+        // initialize the servlet manager
+        $servletManager = new ServletManager();
+        $servletManager->injectServlets($servlets);
+        $servletManager->injectServletMappings($servletMappings);
+        $servletManager->injectInitParameters($initParameters);
+        $servletManager->injectSecuredUrlConfigs($securedUrlConfigs);
+        $servletManager->injectSessionParameters($sessionParameters);
+        $servletManager->injectWebappPath($application->getWebappPath());
+        $servletManager->injectResourceLocator($servletLocator);
 
-                // register the default class loader
-                $initialContext->getClassLoader()->register(true, true);
-
-                // initialize the stackabls
-                $servlets = new StackableStorage();
-                $servletMappings = new StackableStorage();
-                $initParameters = new StackableStorage();
-                $securedUrlConfigs = new StackableStorage();
-                $sessionParameters = new StackableStorage();
-
-                // initialize the servlet locator
-                $servletLocator = new ServletLocator();
-
-                // initialize the servlet manager
-                $servletManager = new ServletManager();
-                $servletManager->injectServlets($servlets);
-                $servletManager->injectServletMappings($servletMappings);
-                $servletManager->injectInitParameters($initParameters);
-                $servletManager->injectSecuredUrlConfigs($securedUrlConfigs);
-                $servletManager->injectSessionParameters($sessionParameters);
-                $servletManager->injectWebappPath($application->getWebappPath());
-                $servletManager->injectResourceLocator($servletLocator);
-
-                // attach the instance
-                $instances[] = $servletManager;
-
-                // wait for the next instance to be created
-                $self->wait();
-
-            }, $this);
-        }
+        // attach the instance
+        $application->addManager($servletManager);
     }
 }

@@ -20,6 +20,7 @@
  */
 namespace TechDivision\ServletEngine;
 
+use AppserverIo\Logger\LoggerUtils;
 use \TechDivision\Servlet\ServletSession;
 use \TechDivision\Storage\StorageInterface;
 use \TechDivision\Storage\StackableStorage;
@@ -40,74 +41,42 @@ class FilesystemPersistenceManager extends \Thread implements PersistenceManager
 {
 
     /**
-     * The sessions we want to handle persistence for.
-     *
-     * @var \TechDivision\Storage\StorageInterface
-     */
-    protected $sessions;
-
-    /**
-     * The storage for the session checksums.
-     *
-     * @return \TechDivision\Storage\StorageInterface
-     */
-    protected $checksums;
-
-    /**
-     * The session marshaller instance we use to marshall/unmarschall sessions.
-     *
-     * @var \TechDivision\ServletEngine\SessionMarshaller
-     */
-    protected $sessionMarshaller;
-
-    /**
-     * The session factory instance.
-     *
-     * @var \TechDivision\ServletEngine\SessionFactory
-     */
-    protected $sessionFactory;
-
-    /**
-     * The session settings instance.
-     *
-     * @var \TechDivision\ServletEngine\SessionSettings
-     */
-    protected $sessionSettings;
-
-    /**
-     * The system user.
-     *
-     * @var string
-     */
-    protected $user;
-
-    /**
-     * The system group.
-     *
-     * @var string
-     */
-    protected $group;
-
-    /**
-     * The preferred umask.
+     * The time we wait after each persistence loop.
      *
      * @var integer
      */
-    protected $umask;
-
-    /**
-     * The flag that starts/stops the persistence manager.
-     *
-     * @var boolean
-     */
-    protected $run = false;
+    const TIME_TO_LIVE = 5;
 
     /**
      * Initializes the session persistence manager.
      */
     public function __construct()
     {
+
+        // initialize the class members
+        $this->sessions = null;
+        $this->checksums = null;
+        $this->sessionMarshaller = null;
+        $this->sessionFactory = null;
+        $this->sessionSettings = null;
+
+        // initialize the class members with default values
+        $this->user = 'nobody';
+        $this->group = 'nobody';
+        $this->umask = 0002;
         $this->run = true;
+    }
+
+    /**
+     * Injects the available logger instances.
+     *
+     * @param array $loggers The logger instances
+     *
+     * @return void
+     */
+    public function injectLoggers(array $loggers)
+    {
+        $this->loggers = $loggers;
     }
 
     /**
@@ -293,9 +262,29 @@ class FilesystemPersistenceManager extends \Thread implements PersistenceManager
      */
     public function run()
     {
-        while ($this->run) {
+
+        // setup autoloader
+        require SERVER_AUTOLOADER;
+
+        // try to load the profile logger
+        if (isset($this->loggers[LoggerUtils::PROFILE])) {
+            $profileLogger = $this->loggers[LoggerUtils::PROFILE];
+            $profileLogger->appendThreadContext('filesystem-persistence-manager');
+        }
+
+        while ($this->run) { // we run forever
+
+            // now persist inactive sessions
             $this->persist();
-            sleep(5);
+
+            if ($profileLogger) { // profile the size of the sessions
+                $profileLogger->debug(sprintf('Persisted sessions to filesystem for sessions size: %d', sizeof($this->getSessions())));
+            }
+
+            // wait for the configured time of seconds
+            $this->synchronized(function ($self) {
+                $self->wait(1000000 * FilesystemPersistenceManager::TIME_TO_LIVE);
+            }, $this);
         }
     }
 
@@ -305,7 +294,7 @@ class FilesystemPersistenceManager extends \Thread implements PersistenceManager
      *
      * @return void
      */
-    protected function persist()
+    public function persist()
     {
 
         // we want to know what inactivity timeout we've to check the sessions for
@@ -333,10 +322,17 @@ class FilesystemPersistenceManager extends \Thread implements PersistenceManager
 
                 // we want to detach the session (to free memory), when the last activity is > the inactivity timeout (1440 by default)
                 if ($session->getId() != null && $checksum === $session->checksum() && $lastActivitySecondsAgo > $inactivityTimeout) {
+
                     // prepare the session filename
                     $sessionFilename = $this->getSessionSavePath($this->getSessionSettings()->getSessionFilePrefix() . $id);
+
                     // update the checksum and the file that stores the session data
                     file_put_contents($sessionFilename, $this->marshall($session));
+
+                    // remove the session instance from the session factory
+                    $this->getSessionFactory()->removeBySessionId($id);
+
+                    // remove the session instance from the session manager
                     $this->getChecksums()->remove($id);
                     $this->getSessions()->remove($id);
                     continue;
@@ -344,8 +340,10 @@ class FilesystemPersistenceManager extends \Thread implements PersistenceManager
 
                 // we want to persist the session because its data has been changed
                 if ($session->getId() != null && $checksum !== $session->checksum()) {
+
                     // prepare the session filename
                     $sessionFilename = $this->getSessionSavePath($this->getSessionSettings()->getSessionFilePrefix() . $id);
+
                     // update the checksum and the file that stores the session data
                     file_put_contents($sessionFilename, $this->marshall($session));
                     $this->getChecksums()->set($id, $session->checksum());
@@ -354,10 +352,16 @@ class FilesystemPersistenceManager extends \Thread implements PersistenceManager
 
                 // we want to remove the session file, because the session has been destroyed
                 if ($session->getId() == null && $checksum !== $session->checksum()) {
+
                     // prepare the session filename
                     $sessionFilename = $this->getSessionSavePath($this->getSessionSettings()->getSessionFilePrefix() . $id);
                     // delete the file containing the session data if available
                     $this->removeSessionFile($sessionFilename);
+
+                    // remove the session instance from the session factory
+                    $this->getSessionFactory()->removeBySessionId($id);
+
+                    // remove the session instance from the session manager
                     $this->getChecksums()->remove($id);
                     $this->getSessions()->remove($id);
                 }

@@ -20,7 +20,8 @@
  */
 namespace TechDivision\ServletEngine;
 
-use \TechDivision\Servlet\ServletSession;
+use AppserverIo\Logger\LoggerUtils;
+use TechDivision\Servlet\ServletSession;
 
 /**
  * A thread thats preinitialized session instances and adds them to the
@@ -37,25 +38,11 @@ class StandardGarbageCollector extends \Thread implements GarbageCollector
 {
 
     /**
-     * The the sessions we want to handle garbage collection for.
+     * The time we wait after each persistence loop.
      *
-     * @var \TechDivision\Storage\StorageInterface
+     * @var integer
      */
-    protected $sessions;
-
-    /**
-     * The the session settings.
-     *
-     * @var \TechDivision\ServletEngine\SessionSettings
-     */
-    protected $sessionSettings;
-
-    /**
-     * The flag that starts/stops the garbage collector.
-     *
-     * @var boolean
-     */
-    protected $run = false;
+    const TIME_TO_LIVE = 5;
 
     /**
      * Initializes the session persistence manager with the session manager instance
@@ -64,6 +51,18 @@ class StandardGarbageCollector extends \Thread implements GarbageCollector
     public function __construct()
     {
         $this->run = true;
+    }
+
+    /**
+     * Injects the available logger instances.
+     *
+     * @param array $loggers The logger instances
+     *
+     * @return void
+     */
+    public function injectLoggers(array $loggers)
+    {
+        $this->loggers = $loggers;
     }
 
     /**
@@ -76,6 +75,18 @@ class StandardGarbageCollector extends \Thread implements GarbageCollector
     public function injectSessions($sessions)
     {
         $this->sessions = $sessions;
+    }
+
+    /**
+     * Injects the session factory.
+     *
+     * @param \TechDivision\ServletEngine\SessionFactory $sessionFactory The session factory
+     *
+     * @return void
+     */
+    public function injectSessionFactory($sessionFactory)
+    {
+        $this->sessionFactory = $sessionFactory;
     }
 
     /**
@@ -98,6 +109,16 @@ class StandardGarbageCollector extends \Thread implements GarbageCollector
     public function getSessions()
     {
         return $this->sessions;
+    }
+
+    /**
+     * Returns the session factory instance.
+     *
+     * @return \TechDivision\ServletEngine\SessionFactory The session factory instance
+     */
+    public function getSessionFactory()
+    {
+        return $this->sessionFactory;
     }
 
     /**
@@ -126,9 +147,29 @@ class StandardGarbageCollector extends \Thread implements GarbageCollector
      */
     public function run()
     {
+
+        // setup autoloader
+        require SERVER_AUTOLOADER;
+
+        // try to load the profile logger
+        if (isset($this->loggers[LoggerUtils::PROFILE])) {
+            $profileLogger = $this->loggers[LoggerUtils::PROFILE];
+            $profileLogger->appendThreadContext('servlet-engine-garbage-collector');
+        }
+
         while ($this->run) {
+
+            // collect the session garbage
             $this->collectGarbage();
-            sleep(5);
+
+            if ($profileLogger) { // profile the size of the sessions
+                $profileLogger->debug(sprintf('Collect garbage for session pool with size: %d', sizeof($this->getSessions())));
+            }
+
+            // wait for the configured time of seconds
+            $this->synchronized(function ($self) {
+                $self->wait(1000000 * StandardGarbageCollector::TIME_TO_LIVE);
+            }, $this);
         }
     }
 
@@ -192,17 +233,29 @@ class StandardGarbageCollector extends \Thread implements GarbageCollector
                         // if session has been expired, destroy and remove it
                         if ($lastActivitySecondsAgo > $inactivityTimeout) {
 
-                            // first we've to remove the session from the manager
-                            $this->getSessions()->remove($session->getId());
+                            // load the session-ID
+                            $sessionId = $session->getId();
+
+                            // first remove the session from the session factory
+                            $this->getSessionFactory()->removeBySessionId($sessionId);
+
+                            // then remove the session from the session manager
+                            $this->getSessions()->remove($sessionId);
 
                             // destroy the session if not already done
-                            if ($session->getId() != null) {
-                                $session->destroy(sprintf('Session %s was inactive for %s seconds, more than the configured timeout of %s seconds.', $session->getId(), $lastActivitySecondsAgo, $inactivityTimeout));
-
+                            if ($sessionId != null) {
+                                $session->destroy(
+                                    sprintf(
+                                        'Session %s was inactive for %s seconds, more than the configured timeout of %s seconds.',
+                                        $sessionId,
+                                        $lastActivitySecondsAgo,
+                                        $inactivityTimeout
+                                    )
+                                );
                             }
 
                             // prepare the session filename
-                            $sessionFilename = $this->getSessionSavePath($this->getSessionSettings()->getSessionFilePrefix() . $session->getId());
+                            $sessionFilename = $this->getSessionSavePath($this->getSessionSettings()->getSessionFilePrefix() . $sessionId);
 
                             // delete the file containing the session data if available
                             if (file_exists($sessionFilename)) {
@@ -210,7 +263,7 @@ class StandardGarbageCollector extends \Thread implements GarbageCollector
                             }
 
                             // raise the counter of expired session
-                            $sessionRemovalCount ++;
+                            $sessionRemovalCount++;
                         }
                     }
                 }

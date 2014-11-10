@@ -23,7 +23,8 @@
 namespace TechDivision\ServletEngine\Authentication;
 
 use TechDivision\Storage\GenericStackable;
-use TechDivision\ApplicationServer\AbstractManagerFactory;
+use TechDivision\Application\Interfaces\ApplicationInterface;
+use TechDivision\Application\Interfaces\ManagerConfigurationInterface;
 
 /**
  * A factory for the standard session authentication manager instances.
@@ -36,38 +37,24 @@ use TechDivision\ApplicationServer\AbstractManagerFactory;
  * @license    http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @link       http://www.appserver.io
  */
-class StandardAuthenticationManagerFactory extends AbstractManagerFactory
+class StandardAuthenticationManagerFactory
 {
 
     /**
      * The main method that creates new instances in a separate context.
      *
+     * @param \TechDivision\Application\Interfaces\ApplicationInterface          $application          The application instance to register the class loader with
+     * @param \TechDivision\Application\Interfaces\ManagerConfigurationInterface $managerConfiguration The manager configuration
+     *
      * @return void
      */
-    public function run()
+    public static function visit(ApplicationInterface $application, ManagerConfigurationInterface $managerConfiguration)
     {
 
-        while (true) { // we never stop
+        // initialize the authentication manager
+        $authenticationManager = new StandardAuthenticationManager();
 
-            $this->synchronized(function ($self) {
-
-                // make instances local available
-                $instances = $self->instances;
-                $initialContext = $self->initialContext;
-
-                // register the default class loader
-                $initialContext->getClassLoader()->register(true, true);
-
-                // initialize the authentication manager
-                $authenticationManager = new StandardAuthenticationManager();
-
-                // attach the instance
-                $instances[] = $authenticationManager;
-
-                // wait for the next instance to be created
-                $self->wait();
-
-            }, $this);
-        }
+        // attach the instance
+        $application->addManager($authenticationManager);
     }
 }

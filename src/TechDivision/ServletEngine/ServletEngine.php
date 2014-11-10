@@ -42,6 +42,7 @@ use TechDivision\ServletEngine\Authentication\AuthenticationValve;
 use TechDivision\ApplicationServer\Interfaces\ContainerInterface;
 use TechDivision\Connection\ConnectionRequestInterface;
 use TechDivision\Connection\ConnectionResponseInterface;
+use TechDivision\Server\Dictionaries\EnvVars;
 
 /**
  * A servlet engine implementation.
@@ -78,46 +79,12 @@ class ServletEngine extends GenericStackable implements ModuleInterface
     public function __construct()
     {
 
-        /**
-         * Storage for the servlet engines valves that handles the request.
-         *
-         * @var \TechDivision\Storage\GenericStackable
-         */
+        // initialize the members
         $this->valves = new GenericStackable();
-
-        /**
-         * Storage handlers registered in the web server.
-         *
-         * @var \TechDivision\Storage\GenericStackable
-         */
         $this->handlers = new GenericStackable();
-
-        /**
-         * Storage with the available applications.
-         *
-         * @var \TechDivision\Storage\GenericStackable
-         */
         $this->applications = new GenericStackable();
-
-        /**
-         * Storage with the available applications.
-         *
-         * @var \TechDivision\Storage\GenericStackable
-         */
         $this->dependencies = new GenericStackable();
-
-        /**
-         * Storage with the registered virtual hosts.
-         *
-         * @var \TechDivision\Storage\GenericStackable
-         */
         $this->virtualHosts = new GenericStackable();
-
-        /**
-         * Storage with URL => application mappings.
-         *
-         * @var \TechDivision\Storage\GenericStackable
-         */
         $this->urlMappings = new GenericStackable();
     }
 
@@ -323,16 +290,39 @@ class ServletEngine extends GenericStackable implements ModuleInterface
             $servletRequest->injectResponse($servletResponse);
 
             // load a NOT working request handler from the pool
-            $requestHandler = $this->requestHandlerFromPool($servletRequest);
+            $valves = $this->valves;
+            $urlMappings = $this->urlMappings;
+            $applications = $this->applications;
 
-            // inject request/response and process the remote method call
+            // explode host and port from the host header
+            list ($host, ) = explode(':', $request->getHeader(HttpProtocol::HEADER_HOST));
+
+            // prepare the request URL we want to match
+            $url =  $host . $requestContext->getServerVar(ServerVars::X_REQUEST_URI);
+
+            // try to match a registered application with the passed request
+            foreach ($urlMappings as $pattern => $applicationName) {
+                if (preg_match($pattern, $url) === 1) {
+                    break;
+                }
+            }
+
+            // check if an application is available
+            if (isset($applications[$applicationName]) === false) { // if not throw a bad request exception
+                throw new BadRequestException(sprintf('Can\'t find application for URL %s', $url));
+            }
+
+            // load the application
+            $application = $applications[$applicationName];
+
+            // initialize the request handler instance
+            $requestHandler = new RequestHandler();
+            $requestHandler->injectValves($valves);
+            $requestHandler->injectApplication($application);
             $requestHandler->injectRequest($servletRequest);
             $requestHandler->injectResponse($servletResponse);
             $requestHandler->start();
             $requestHandler->join();
-
-            // re-attach the request handler to the pool
-            $this->requestHandlerToPool($requestHandler);
 
             // copy the values from the servlet response back to the HTTP response
             $response->setStatusCode($servletResponse->getStatusCode());
@@ -372,30 +362,12 @@ class ServletEngine extends GenericStackable implements ModuleInterface
      *
      * @param \TechDivision\Servlet\Http\HttpServletRequest $servletRequest The servlet request we need a request handler to handle for
      *
-     * @return \TechDivision\ServletEngine\RequestHandler The request handler
+     * @return string The application name of the application to handle the request
+     * @deprecated This method is deprecated since 0.8.0
      */
     protected function requestHandlerFromPool(HttpServletRequest $servletRequest)
     {
-
-        // explode host and port from the host header
-        list ($host, ) = explode(':', $servletRequest->getHeader(HttpProtocol::HEADER_HOST));
-
-        // prepare the request URL we want to match
-        $url =  $host . $servletRequest->getUri();
-
-        // iterate over all request handlers for the request we has to handle
-        foreach ($this->urlMappings as $pattern => $applicationName) {
-
-            // try to match a registered application with the passed request
-            if (preg_match($pattern, $url) === 1) {
-
-                // create a new request handler and return it
-                return new RequestHandler($this->applications[$applicationName], $this->valves);
-            }
-        }
-
-        // if not throw a bad request exception
-        throw new BadRequestException(sprintf('Can\'t find application for URL %s', $url));
+        // nothing to do here
     }
 
     /**
@@ -405,6 +377,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
      * @param \TechDivision\ServletEngine\RequestHandler $requestHandler The request handler instance we want to re-attach to the pool
      *
      * @return void
+     * @deprecated This method is deprecated since 0.8.0
      */
     protected function requestHandlerToPool($requestHandler)
     {

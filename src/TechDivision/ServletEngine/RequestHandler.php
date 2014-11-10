@@ -136,7 +136,7 @@ class RequestHandler extends \Thread
             // profile the request if the profile logger is available
             if ($profileLogger = $application->getInitialContext()->getLogger(LoggerUtils::PROFILE)) {
                 $profileLogger->appendThreadContext('request-handler');
-                $profileLogger->info($servletRequest->getUri());
+                $profileLogger->debug($servletRequest->getUri());
             }
 
         } catch (\Exception $e) {

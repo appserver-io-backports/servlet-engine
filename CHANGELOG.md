@@ -1,3 +1,13 @@
+# Version 0.8.2
+
+## Bugfixes
+
+* Make SessionFactory::nextFromPool() + SessionFactory::removeBySession() methods protected
+
+## Features
+
+* None
+
 # Version 0.8.1
 
 ## Bugfixes

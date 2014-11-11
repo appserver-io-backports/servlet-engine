@@ -122,7 +122,7 @@ class SessionFactory extends \Thread
      *
      * @return \TechDivision\Session\ServletSession The session instance
      */
-    public function nextFromPool()
+    protected function nextFromPool()
     {
         return $this->synchronized(function ($self) {
 
@@ -151,7 +151,7 @@ class SessionFactory extends \Thread
      *
      * @return void
      */
-    public function removeBySessionId($sessionId)
+    protected function removeBySessionId($sessionId)
     {
         $this->synchronized(function ($self, $id) {
 

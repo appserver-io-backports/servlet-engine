@@ -42,17 +42,14 @@ class ServletLocator implements ResourceLocator
      * Tries to locate the resource related with the request.
      *
      * @param \TechDivision\Servlet\ServletContext $servletContext The servlet context that handles the servlets
-     * @param \TechDivision\Servlet\ServletRequest $servletRequest The request instance to return the servlet for
+     * @param string                               $servletPath    The servlet path to return the servlet for
      *
      * @return \TechDivision\Servlet\Servlet The requested servlet
      * @see \TechDivision\ServletEngine\ResourceLocator::locate()
      * @throws \TechDivision\ServletEngine\ServletNotFoundException Is thrown if no servlet can be found for the passed request
      */
-    public function locate(ServletContext $servletContext, ServletRequest $servletRequest)
+    public function locate(ServletContext $servletContext, $servletPath)
     {
-
-        // load the path to the (almost virtual servlet)
-        $servletPath = $servletRequest->getServletPath();
 
         // iterate over all servlets and return the matching one
         foreach ($servletContext->getServletMappings() as $urlPattern => $servletName) {

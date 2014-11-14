@@ -1,3 +1,13 @@
+# Version 0.8.4
+
+## Bugfixes
+
+* None
+
+## Features
+
+* Add DI functionality for servlets, Issue #4 in (techdivision/TechDivision_ApplicationServer)
+
 # Version 0.8.3
 
 ## Bugfixes

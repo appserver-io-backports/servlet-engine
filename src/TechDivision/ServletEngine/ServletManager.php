@@ -21,14 +21,15 @@
 
 namespace TechDivision\ServletEngine;
 
-use TechDivision\Storage\StackableStorage;
 use TechDivision\Servlet\Servlet;
 use TechDivision\Servlet\ServletContext;
+use TechDivision\Storage\StorageInterface;
+use TechDivision\Storage\StackableStorage;
 use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\ServletEngine\ServletConfiguration;
 use TechDivision\ServletEngine\InvalidServletMappingException;
 use TechDivision\Application\Interfaces\ApplicationInterface;
-use TechDivision\Storage\StorageInterface;
+use TechDivision\Application\Interfaces\DependencyInjectionContainerInterface;
 
 /**
  * The servlet manager handles the servlets registered for the application.
@@ -51,6 +52,18 @@ class ServletManager extends \Stackable implements ServletContext
     public function __construct()
     {
         $this->webappPath = '';
+    }
+
+    /**
+     * Inject the application instance.
+     *
+     * @param \TechDivision\Application\Interfaces\ApplicationInterface $application The application instance
+     *
+     * @return void
+     */
+    public function injectApplication(ApplicationInterface $application)
+    {
+        $this->application = $application;
     }
 
     /**
@@ -149,6 +162,20 @@ class ServletManager extends \Stackable implements ServletContext
     public function initialize(ApplicationInterface $application)
     {
         $this->registerServlets();
+    }
+
+    /**
+     * Returns a new instance of the passed class name.
+     *
+     * @param string      $className The fully qualified class name to return the instance for
+     * @param string|null $sessionId The session-ID, necessary to inject stateful session beans (SFBs)
+     * @param array       $args      Arguments to pass to the constructor of the instance
+     *
+     * @return object The instance itself
+     */
+    public function newInstance($className, $sessionId = null, array $args = array())
+    {
+        return $this->getApplication()->newInstance($className, $sessionId, $args);
     }
 
     /**
@@ -251,6 +278,16 @@ class ServletManager extends \Stackable implements ServletContext
                 $this->servletMappings[$urlPattern] = $servletName;
             }
         }
+    }
+
+    /**
+     * Returns the application instance.
+     *
+     * @return string The application instance
+     */
+    public function getApplication()
+    {
+        return $this->application;
     }
 
     /**
@@ -433,13 +470,54 @@ class ServletManager extends \Stackable implements ServletContext
      * Tries to locate the resource related with the request.
      *
      * @param \TechDivision\Servlet\Http\HttpServletRequest $servletRequest The request instance to return the servlet for
+     * @param array                                         $args           The arguments passed to the servlet constructor
      *
      * @return \TechDivision\Servlet\Servlet The requested servlet
      * @see \TechDivision\ServletEngine\ResourceLocator::locate()
      */
-    public function locate(HttpServletRequest $servletRequest)
+    public function locate(HttpServletRequest $servletRequest, array $args = array())
     {
-        return $this->getResourceLocator()->locate($this, $servletRequest);
+
+        // load the servlet path => to locate the servlet
+        $servletPath = $servletRequest->getServletPath();
+
+        // check if we've a HTTP session-ID
+        $sessionId = null;
+
+        // if no session has already been load, initialize the session manager
+        if ($manager = $this->getApplication()->getManager(SessionManager::IDENTIFIER)) {
+            $requestedSessionName = $manager->getSessionSettings()->getSessionName();
+            if ($servletRequest->hasCookie($requestedSessionName)) {
+                $sessionId = $servletRequest->getCookie($requestedSessionName)->getValue();
+            }
+        }
+
+        // return the instance
+        return $this->lookup($servletPath, $sessionId, $args);
+    }
+
+    /**
+     * Runs a lookup for the servlet with the passed class name and
+     * session ID.
+     *
+     * @param string $servletPath The servlet path
+     * @param string $sessionId   The session ID
+     * @param array  $args        The arguments passed to the servlet constructor
+     *
+     * @return \TechDivision\Servlet\GenericServlet The requested servlet
+     */
+    public function lookup($servletPath, $sessionId = null, array $args = array())
+    {
+
+        // load the servlet instance
+        $instance = $this->getResourceLocator()->locate($this, $servletPath, $sessionId, $args);
+
+        // inject the dependencies
+        $dependencyInjectionContainer = $this->getApplication()->getManager(DependencyInjectionContainerInterface::IDENTIFIER);
+        $dependencyInjectionContainer->injectDependencies($instance, null, $sessionId);
+
+        // return the instance
+        return $instance;
     }
 
     /**

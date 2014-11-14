@@ -1,3 +1,14 @@
+# Version 0.8.3
+
+## Bugfixes
+
+* None
+
+## Features
+
+* Add Request::__cleanup() method to unset application context when worker threads have been shutdown
+* Add magic RequestHandler::__shutdown() method that'll be invoked when a thread will be shutdown
+
 # Version 0.8.2
 
 ## Bugfixes

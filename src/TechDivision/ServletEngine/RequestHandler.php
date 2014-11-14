@@ -144,6 +144,20 @@ class RequestHandler extends \Thread
             $servletResponse->appendBodyStream($e->__toString());
             $servletResponse->setStatusCode(500);
         }
+
+        $this->__shutdown();
+    }
+
+    /**
+     * Thread shutdown function that allows you to cleanup
+     * garbage.
+     *
+     * @return void
+     * @since appserver.io/pthreads >= 1.0.2
+     */
+    public function __shutdown()
+    {
+        $this->servletRequest->__cleanup();
     }
 
     /**
@@ -166,5 +180,7 @@ class RequestHandler extends \Thread
             $servletResponse->setStatusCode(500);
             $servletResponse->appendBodyStream($lastError['message']);
         }
+
+        $this->__shutdown();
     }
 }

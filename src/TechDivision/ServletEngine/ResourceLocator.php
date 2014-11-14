@@ -40,9 +40,9 @@ interface ResourceLocator
      * Tries to locate the resource related with the request.
      *
      * @param \TechDivision\Servlet\ServletContext $servletContext The servlet context that handles the servlets
-     * @param \TechDivision\Servlet\ServletRequest $servletRequest The request instance to return the servlet for
+     * @param string                               $servletPath    The servlet path to return the servlet for
      *
      * @return \TechDivision\Servlet\Servlet The requested servlet
      */
-    public function locate(ServletContext $servletContext, ServletRequest $servletRequest);
+    public function locate(ServletContext $servletContext, $servletPath);
 }

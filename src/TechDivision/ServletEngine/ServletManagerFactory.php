@@ -62,6 +62,7 @@ class ServletManagerFactory
         // initialize the servlet manager
         $servletManager = new ServletManager();
         $servletManager->injectServlets($servlets);
+        $servletManager->injectApplication($application);
         $servletManager->injectServletMappings($servletMappings);
         $servletManager->injectInitParameters($initParameters);
         $servletManager->injectSecuredUrlConfigs($securedUrlConfigs);

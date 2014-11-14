@@ -59,6 +59,16 @@ class Request extends GenericStackable implements HttpServletRequest
     }
 
     /**
+     * Cleanup method that allows manual garbage collection.
+     *
+     * @return void
+     */
+    public function __cleanup()
+    {
+        unset($this->context);
+    }
+
+    /**
      * Initialises the response object to default properties
      *
      * @return void

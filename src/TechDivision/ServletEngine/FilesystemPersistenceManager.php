@@ -68,6 +68,17 @@ class FilesystemPersistenceManager extends \Thread implements PersistenceManager
     }
 
     /**
+     * Starts the persistence manager.
+     *
+     * @return void
+     */
+    public function start()
+    {
+        // TODO: Implement start() method.
+        return;
+    }
+
+    /**
      * Injects the available logger instances.
      *
      * @param array $loggers The logger instances

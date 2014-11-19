@@ -105,7 +105,7 @@ class Response extends GenericStackable implements HttpServletResponse
      */
     public function addCookie(HttpCookieInterface $cookie)
     {
-        $this->cookies[$cookie->getName()] = $cookie;
+        $this->cookies[$cookie->getName()] = serialize($cookie);
     }
 
     /**
@@ -131,7 +131,7 @@ class Response extends GenericStackable implements HttpServletResponse
     public function getCookie($cookieName)
     {
         if ($this->hasCookie($cookieName)) {
-            return $this->cookies[$cookieName];
+            return unserialize($this->cookies[$cookieName]);
         }
     }
 

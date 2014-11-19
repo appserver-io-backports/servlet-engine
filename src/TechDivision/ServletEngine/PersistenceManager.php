@@ -51,7 +51,7 @@ interface PersistenceManager
      *
      * @return void
      */
-    public function start();
+    public function run();
 
     /**
      * Stops the persistence manager.

@@ -344,7 +344,7 @@ class ServletEngine extends GenericStackable implements ModuleInterface
 
             // copy the servlet response cookies back to the HTTP response
             foreach ($servletResponse->getCookies() as $cookie) {
-                $response->addCookie($cookie);
+                $response->addCookie(unserialize($cookie));
             }
 
             // set response state to be dispatched after this without calling other modules process
@@ -394,19 +394,6 @@ class ServletEngine extends GenericStackable implements ModuleInterface
      */
     protected function prepareServletRequest(HttpServletRequest $servletRequest)
     {
-
-        // transform the cookie headers into real servlet cookies
-        if ($servletRequest->hasHeader(HttpProtocol::HEADER_COOKIE)) {
-
-            // explode the cookie headers
-            $cookieHeaders = explode('; ', $servletRequest->getHeader(HttpProtocol::HEADER_COOKIE));
-
-            // create real cookie for each cookie key/value pair
-            foreach ($cookieHeaders as $cookieHeader) {
-                $servletRequest->addCookie(HttpCookie::createFromRawSetCookieHeader($cookieHeader));
-            }
-        }
-
         // load the request URI and query string
         $uri = $servletRequest->getUri();
         $queryString = $servletRequest->getQueryString();

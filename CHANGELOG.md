@@ -1,3 +1,14 @@
+# Version 0.8.5
+
+## Bugfixes
+
+* None
+
+## Features
+
+* Use application context to lookup manager instances
+* Update constant IDENTIFIER to use short class name instead of fully qualified one
+
 # Version 0.8.4
 
 ## Bugfixes

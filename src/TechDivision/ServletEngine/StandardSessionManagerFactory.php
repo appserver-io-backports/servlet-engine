@@ -94,6 +94,6 @@ class StandardSessionManagerFactory
         $sessionManager->injectGarbageCollector($garbageCollector);
 
         // attach the instance
-        $application->addManager($sessionManager);
+        $application->addManager($sessionManager, $managerConfiguration);
     }
 }

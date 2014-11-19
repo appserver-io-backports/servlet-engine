@@ -55,6 +55,6 @@ class StandardAuthenticationManagerFactory
         $authenticationManager = new StandardAuthenticationManager();
 
         // attach the instance
-        $application->addManager($authenticationManager);
+        $application->addManager($authenticationManager, $managerConfiguration);
     }
 }

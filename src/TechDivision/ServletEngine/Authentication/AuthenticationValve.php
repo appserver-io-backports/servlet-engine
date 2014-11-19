@@ -50,7 +50,7 @@ class AuthenticationValve implements Valve
     {
 
         // load the authentication manager
-        $authenticationManager = $servletRequest->getContext()->getManager(AuthenticationManager::IDENTIFIER);
+        $authenticationManager = $servletRequest->getContext()->search('AuthenticationManager');
 
         // authenticate the request
         if ($authenticationManager->handleRequest($servletRequest, $servletResponse) === false) {

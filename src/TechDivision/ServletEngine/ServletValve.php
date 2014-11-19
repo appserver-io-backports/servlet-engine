@@ -53,7 +53,7 @@ class ServletValve implements Valve
     {
 
         // load the servlet manager
-        $servletManager = $servletRequest->getContext()->getManager(ServletContext::IDENTIFIER);
+        $servletManager = $servletRequest->getContext()->search('ServletContext');
 
         // locate and service the servlet
         $servletManager->locate($servletRequest)->service($servletRequest, $servletResponse);

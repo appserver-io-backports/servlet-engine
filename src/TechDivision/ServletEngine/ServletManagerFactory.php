@@ -71,6 +71,6 @@ class ServletManagerFactory
         $servletManager->injectResourceLocator($servletLocator);
 
         // attach the instance
-        $application->addManager($servletManager);
+        $application->addManager($servletManager, $managerConfiguration);
     }
 }

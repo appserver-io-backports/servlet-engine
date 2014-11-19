@@ -379,7 +379,7 @@ class Request extends GenericStackable implements HttpServletRequest
     {
 
         // if no session has already been load, initialize the session manager
-        $manager = $this->getContext()->getManager(SessionManager::IDENTIFIER);
+        $manager = $this->getContext()->search('SessionManager');
 
         // if no session manager was found, we don't support sessions
         if ($manager == null) {

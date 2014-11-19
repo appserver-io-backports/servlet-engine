@@ -29,7 +29,6 @@ use TechDivision\Servlet\Http\HttpServletRequest;
 use TechDivision\ServletEngine\ServletConfiguration;
 use TechDivision\ServletEngine\InvalidServletMappingException;
 use TechDivision\Application\Interfaces\ApplicationInterface;
-use TechDivision\Application\Interfaces\DependencyInjectionContainerInterface;
 
 /**
  * The servlet manager handles the servlets registered for the application.
@@ -175,7 +174,7 @@ class ServletManager extends \Stackable implements ServletContext
      */
     public function newInstance($className, $sessionId = null, array $args = array())
     {
-        return $this->getApplication()->newInstance($className, $sessionId, $args);
+        return $this->getApplication()->search('ProviderInterface')->newInstance($className, $sessionId, $args);
     }
 
     /**
@@ -485,7 +484,7 @@ class ServletManager extends \Stackable implements ServletContext
         $sessionId = null;
 
         // if no session has already been load, initialize the session manager
-        if ($manager = $this->getApplication()->getManager(SessionManager::IDENTIFIER)) {
+        if ($manager = $this->getApplication()->search('SessionManager')) {
             $requestedSessionName = $manager->getSessionSettings()->getSessionName();
             if ($servletRequest->hasCookie($requestedSessionName)) {
                 $sessionId = $servletRequest->getCookie($requestedSessionName)->getValue();
@@ -513,7 +512,7 @@ class ServletManager extends \Stackable implements ServletContext
         $instance = $this->getResourceLocator()->locate($this, $servletPath, $sessionId, $args);
 
         // inject the dependencies
-        $dependencyInjectionContainer = $this->getApplication()->getManager(DependencyInjectionContainerInterface::IDENTIFIER);
+        $dependencyInjectionContainer = $this->getApplication()->search('ProviderInterface');
         $dependencyInjectionContainer->injectDependencies($instance, null, $sessionId);
 
         // return the instance

@@ -1,3 +1,13 @@
+# Version 0.8.6
+
+## Bugfixes
+
+* None
+
+## Features
+
+* Updating for pthreads-1.0.2
+
 # Version 0.8.5
 
 ## Bugfixes
